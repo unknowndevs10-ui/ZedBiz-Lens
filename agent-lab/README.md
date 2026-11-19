@@ -1,47 +1,59 @@
 # ZedBiz Lens — Agent Lab
 
-A lightweight, voice-first demo for exploring ZedBiz's assistant workflow separately from the main app, before integration. The interface follows the app palette: teal `#1F6F6B`, amber `#E0A84B`, pale surface `#F2F6F6`, dark ink `#1E2A2F`, and muted text `#4F5E64`.
+A lightweight prototype for developing the language and interaction layer independently from the main app. The calm interface follows the ZedBiz palette: teal `#1F6F6B`, amber `#E0A84B`, pale surface `#F2F6F6`, dark ink `#1E2A2F`, and muted text `#4F5E64`.
 
-## Run locally
+## Run the local-model build
 
-Serve this folder on localhost so the browser can grant microphone access:
+Requirements: Node.js 18+ and [Ollama](https://ollama.com/download) installed on this computer. Ollama is expected at `http://127.0.0.1:11434` by default.
 
-```bash
-python -m http.server 4173 --directory agent-lab
+1. Download the default local model once (this requires an internet connection and local disk space):
+
+   ```bash
+   ollama pull qwen3.5:2b
+   ```
+
+2. Make sure Ollama is running, then start the Agent Lab server from this folder:
+
+   ```bash
+   node server.mjs
+   ```
+
+3. Open `http://127.0.0.1:4175`. The header reports **LOCAL AI** when the selected model is installed and reachable. Select **DEMO MODE** to return to the synthetic phrase matcher.
+
+The default model can be changed with `ZEDBIZ_MODEL` before starting the server. The Ollama URL can be changed with `OLLAMA_URL`. For example, in PowerShell:
+
+```powershell
+$env:ZEDBIZ_MODEL = 'qwen3.5:4b'
+node server.mjs
 ```
 
-Then open `http://localhost:4173`. If you are already in this folder, use `python -m http.server 4173` instead.
+The server binds to `127.0.0.1` only. The browser sends text to this local server, which calls Ollama on this same computer. This build does not call a paid hosted AI API and needs no AI API key. A model must still be downloaded to enable Local AI. If no model is installed or Ollama is stopped, the UI remains usable in demo phrase mode.
 
-## Try it
+## What the local language agent does
 
-- Type a business note, tap the microphone and speak, or select a short synthetic example.
-- The local phrase matcher compares the note to examples in `synthetic-phrases.js` and suggests a sale, expense, or summary request.
-- It extracts a numeric amount (including common spoken English number words), then shows a draft for review. You can correct the transaction type and amount before confirming.
-- The assistant speaks its response using the browser's speech synthesis when **Voice replies** is on. Typed replies remain available if voice recognition is unavailable.
-- Confirmed demo entries update the small session summary. They disappear when the page closes or is refreshed.
+- Interprets a sale, expense, or summary request using the local model, rather than only matching a short list of example phrases.
+- Requests a missing amount or asks for clarification when the model cannot safely form a draft.
+- Returns a constrained structured response and shows sale/expense drafts for the owner to correct and confirm.
+- Does not calculate tax, classify taxability, infer profit, save a permanent ledger, scan receipts, or connect to ZRA/Zamtel.
+- Leaves a clear seam for the separate future transaction-intelligence layer, pending Developer B's findings.
+
+The model is a language helper, not a source of truth. Its output can be wrong. A person's confirmation remains required. The current total is confirmed sales minus confirmed expenses; it is not gross profit, taxable profit, or bank balance.
+
+## Demo mode
+
+The synthetic phrase matcher is retained as a fallback and comparison mode. It handles a narrow set of English sale, expense, and summary examples, including some spoken English number words. Its displayed match strength is a heuristic—not model confidence and not measured accuracy.
 
 ## Voice and privacy limits
 
-No ZedBiz AI API, model API key, server, or external account is used. Text classification and phrase matching run locally in the browser; the training examples are synthetic and the match strength is a heuristic, not a probability or a measure of real-world accuracy.
+Microphone capture uses the browser's Web Speech Recognition implementation where available. Browser support varies and recognition may rely on a browser-managed network service. Spoken replies use browser speech synthesis and installed voices. The Ollama language-model request itself stays on the local computer, but browser speech recognition may process audio outside the demo. Type instead of speaking if that is unsuitable.
 
-Voice capture uses the browser's Web Speech Recognition implementation, which varies by browser and may require microphone permission and a network connection or browser-managed speech service. ZedBiz does not receive the audio. Spoken responses use the browser's speech synthesis and installed voices. For a voice failure, type the same note instead. The prototype currently evaluates English phrases only; it does not claim Nyanja, Bemba, or other local-language support.
+The prototype supports only the English interaction patterns currently evaluated. It does not claim reliable Bemba, Nyanja, or other local-language support. Test local languages with fluent speakers before making a support claim. No data is persisted by the demo after the page closes.
 
-## Boundaries
+## Architecture direction
 
-- Three intent families only: sales, expenses and business-summary requests. Unrecognized or ambiguous phrases prompt a clarification rather than being silently recorded.
-- A person must confirm a proposed record. The amount and transaction type can be corrected first.
-- Data exists in browser memory only. There is no persistent ledger, tax calculator, profit calculation, receipt scan, external messaging, ZRA/Zamtel integration, or connection to the React app.
-- The totals show recorded sales minus recorded expenses. They are not gross profit, taxable profit, or a bank balance; stock cost and inventory are not inferred.
-- Developer B's transaction-classification work remains open. This experiment provides a place to understand the user interaction and can be compared against an agreed agent interface later.
+1. **Language/interaction layer:** text or speech → clarification → normalized draft → owner confirmation.
+2. **Transaction intelligence layer:** later, pass structured transaction features to the classifier selected with Developer B. XGBoost is a proposal, not yet a validated decision.
+3. **Deterministic calculation layer:** approved business and tax formulas calculate results from explicit inputs. Neither model should invent or calculate tax amounts.
 
-## Future two-layer direction (not implemented here)
-
-1. **Language and interaction layer:** receive speech or text, interpret the owner's wording, ask for missing details, and prepare a normalized draft transaction.
-2. **Transaction intelligence layer:** later, pass the confirmed structured transaction features to Developer B's XGBoost classifier for its category/taxability prediction and feedback. The agent can explain that result to the owner and request review when it is uncertain.
-
-The layers should exchange a documented structured contract. The current synthetic phrase matcher does not call XGBoost, train a model, or represent Developer B's unfinished findings. Deterministic financial and tax calculations remain a separate, rules-based capability; the classifier's output should not itself decide or calculate a tax liability.
-
-## Extending the synthetic examples
-
-Add reviewed, synthetic paraphrases to the relevant `examples` list and meaningful intent words to `anchors` in `synthetic-phrases.js`. Then try known, ambiguous and unrelated phrases. Avoid calling match strength a model confidence, and do not treat synthetic phrases as evidence of language coverage with real business owners.
+Agree and version the interface before integrating these pieces into the main app. Model classification scores need evaluation and uncertainty handling; they must not silently become tax decisions.
 
