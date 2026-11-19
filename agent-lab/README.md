@@ -9,7 +9,7 @@ Requirements: Node.js 18+ and [Ollama](https://ollama.com/download) installed on
 1. Download the default local model once (this requires an internet connection and local disk space):
 
    ```bash
-   ollama pull qwen3.5:2b
+   ollama pull qwen3.5:0.8b
    ```
 
 2. Make sure Ollama is running, then start the Agent Lab server from this folder:
@@ -20,10 +20,10 @@ Requirements: Node.js 18+ and [Ollama](https://ollama.com/download) installed on
 
 3. Open `http://127.0.0.1:4175`. The header reports **LOCAL AI** when the selected model is installed and reachable. Select **DEMO MODE** to return to the synthetic phrase matcher.
 
-The default model can be changed with `ZEDBIZ_MODEL` before starting the server. The Ollama URL can be changed with `OLLAMA_URL`. For example, in PowerShell:
+The default is the smaller Qwen 3.5 0.8B model. It is a hardware-friendly starting point, not a quality guarantee; evaluate its extraction and clarification behavior before relying on it. A 2B option is available if the computer has enough free memory, but this laptop could not start the 2B model during the initial attempt. The default can be changed with `ZEDBIZ_MODEL` before starting the server. The Ollama URL can be changed with `OLLAMA_URL`. For example, in PowerShell:
 
 ```powershell
-$env:ZEDBIZ_MODEL = 'qwen3.5:4b'
+$env:ZEDBIZ_MODEL = 'qwen3.5:2b'
 node server.mjs
 ```
 
