@@ -11,6 +11,10 @@
   let draft = null;
   let recognition = null;
   let listening = false;
+  let localModelAvailable = false;
+  let modelMode = false;
+  let modelName = 'local model';
+  let agentContext = null;
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -19,6 +23,27 @@
     $('#status').innerHTML = `<strong>${state === 'listening' ? 'Listening' : state === 'thinking' ? 'Thinking' : state === 'clarify' ? 'One question' : 'Ready'}</strong> · ${escapeHtml(message)}`;
     $('#main').classList.toggle('listening', state === 'listening');
     $('#main').classList.toggle('thinking', state === 'thinking');
+  }
+  async function checkLocalModel() {
+    try {
+      const response = await fetch('/api/status', {headers:{'accept':'application/json'}});
+      const status = await response.json();
+      localModelAvailable = Boolean(response.ok && status.available);
+      modelName = status.model || modelName;
+      if (localModelAvailable) {
+        modelMode = true;
+        $('#agentMode').setAttribute('aria-pressed','true');
+        $('#agentModeLabel').textContent = 'LOCAL AI · ' + modelName;
+        $('#modeNote').textContent = 'Local model drafts · owner confirmation required';
+        setStatus('Local language model ready. Your input stays on this device.');
+      } else {
+        $('#agentModeLabel').textContent = 'DEMO MODE';
+        $('#agentMode').setAttribute('aria-pressed','false');
+      }
+    } catch {
+      localModelAvailable = false;
+      $('#agentModeLabel').textContent = 'DEMO MODE';
+    }
   }
   function speak(message) {
     if (!$('#voiceReplies').checked || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
@@ -130,7 +155,7 @@
     setStatus('Here is your session summary.');
     speak(answer);
   }
-  function makeDraft(text, intent, amount, strength) {
+  function makeDraft(text, intent, amount, strength = null) {
     const kind = intent === 'sale' ? 'sale' : 'expense';
     const category = categoryFor(intent, text);
     const dupe = records.some(record => record.intent === intent && record.amount === amount && record.source.toLowerCase() === text.trim().toLowerCase());
@@ -143,9 +168,10 @@
     }
     draft = {intent,kind,category,amount,source:text.trim(),strength};
     $('#transcript').textContent = `You said: “${text.trim()}”`;
-    $('#draftSlot').innerHTML = `<section class="draft"><div class="draft-head"><strong>Check this ${kind}</strong><span>Match strength · ${Math.round(strength*100)}%</span></div><div class="draft-source">${escapeHtml(text.trim())}</div><div class="draft-detail">Confirm or correct the suggested type and amount.</div><div class="draft-actions"><label class="sr-only" for="draftType">Transaction type</label><select id="draftType" aria-label="Transaction type"><option value="sale" ${intent==='sale'?'selected':''}>Sale</option><option value="expense" ${intent==='expense'?'selected':''}>Expense</option></select><label class="sr-only" for="draftAmount">Amount in kwacha</label><input id="draftAmount" inputmode="decimal" type="number" min="0.01" step="0.01" value="${amount.toFixed(2)}" aria-label="Amount in kwacha"/><button class="confirm" id="confirm">Confirm</button><button id="discard">Discard</button></div></section>`;
+    const origin = strength === null ? 'Local AI draft · review required' : `Demo match strength · ${Math.round(strength*100)}%`;
+    $('#draftSlot').innerHTML = `<section class="draft"><div class="draft-head"><strong>Check this ${kind}</strong><span>${origin}</span></div><div class="draft-source">${escapeHtml(text.trim())}</div><div class="draft-detail">Confirm or correct the suggested type and amount.</div><div class="draft-actions"><label class="sr-only" for="draftType">Transaction type</label><select id="draftType" aria-label="Transaction type"><option value="sale" ${intent==='sale'?'selected':''}>Sale</option><option value="expense" ${intent==='expense'?'selected':''}>Expense</option></select><label class="sr-only" for="draftAmount">Amount in kwacha</label><input id="draftAmount" inputmode="decimal" type="number" min="0.01" step="0.01" value="${amount.toFixed(2)}" aria-label="Amount in kwacha"/><button class="confirm" id="confirm">Confirm</button><button id="discard">Discard</button></div></section>`;
     setStatus('Review the suggested record before confirming.');
-    const response = `I think this is a ${kind} for ${money(amount)}, categorized as ${category}. The match strength is ${Math.round(strength*100)} percent. Please check and confirm it, or correct the type and amount.`;
+    const response = `I drafted a ${kind} for ${money(amount)}${strength === null ? '' : `, categorized as ${category}`}. Please check and confirm it, or correct the type and amount.`;
     speak(response);
     $('#confirm').onclick = () => {
       const correctedAmount = Number($('#draftAmount').value);
@@ -173,11 +199,45 @@
       speak(answer);
     };
   }
+  async function handleWithModel(input) {
+    const context = agentContext ? JSON.stringify(agentContext) : '';
+    setStatus('Understanding your message on this device…', 'thinking');
+    try {
+      const response = await fetch('/api/agent', {
+        method:'POST', headers:{'content-type':'application/json'},
+        body:JSON.stringify({message:input,context})
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || 'The local model could not respond.');
+      const result = body.result;
+      if (result.intent === 'summary') { agentContext = null; return summarize(input); }
+      if (result.intent === 'clarify') {
+        const question = result.question || 'Please tell me the transaction amount and whether it was a sale or expense.';
+        agentContext = {original:agentContext?.original || input, question};
+        $('#transcript').textContent = question;
+        setStatus('I need one detail before I can prepare the draft.', 'clarify');
+        speak(question);
+        return;
+      }
+      const source = agentContext ? `${agentContext.original} — ${input}` : input;
+      agentContext = null;
+      makeDraft(source, result.intent, result.amount, null);
+    } catch (error) {
+      $('#transcript').textContent = `${error.message} Switch to demo mode or try again.`;
+      setStatus('Local AI is unavailable right now.', 'clarify');
+      speak(error.message);
+    }
+  }
   function handle(text) {
     const input = text.trim();
     if (!input) return;
     $('#draftSlot').innerHTML = '';
     draft = null;
+    if (modelMode && localModelAvailable) {
+      handleWithModel(input);
+      return;
+    }
+    agentContext = null;
     setStatus('Checking the synthetic phrase examples…', 'thinking');
     window.setTimeout(() => {
       const prediction = classify(input);
@@ -220,6 +280,19 @@
     else speak('Voice replies are on.');
   });
 
+  $('#agentMode').addEventListener('click', () => {
+    if (!localModelAvailable) {
+      toast('Local AI is not ready. Start Ollama, install the model, and run server.mjs.');
+      return;
+    }
+    modelMode = !modelMode;
+    $('#agentMode').setAttribute('aria-pressed',String(modelMode));
+    $('#agentModeLabel').textContent = modelMode ? `LOCAL AI · ${modelName}` : 'DEMO MODE';
+    $('#modeNote').textContent = modelMode ? 'Local model drafts · owner confirmation required' : 'Demo phrase matching · no AI API';
+    agentContext = null;
+    setStatus(modelMode ? 'Local language model is on. Your input stays on this device.' : 'Synthetic phrase demo is on.');
+  });
+
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (Recognition) {
     recognition = new Recognition();
@@ -254,5 +327,6 @@
     catch { toast('Microphone is starting. Please wait a moment.'); }
   });
   renderTotals();
+  checkLocalModel();
 })();
 
