@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#080d17" />
+  <title>ZedBiz Lens — Agent Lab</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+    :root{color-scheme:dark;--bg:#080d17;--panel:#101827;--panel2:#121d2e;--line:rgba(178,198,232,.12);--muted:#8795ac;--text:#eff5ff;--mint:#9cf3d4;--blue:#9cc9ff;--violet:#c6adff;--gold:#ffd58a;--red:#ff9caa}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 31%,rgba(38,76,129,.24),transparent 36%),radial-gradient(ellipse at 85% 92%,rgba(105,67,168,.1),transparent 33%),var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);letter-spacing:.01em}
+    button,input{font:inherit} button{color:inherit;cursor:pointer}.shell{max-width:1200px;margin:auto;padding:24px 34px 30px;min-height:100vh;display:flex;flex-direction:column}
+    header{height:58px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;gap:12px;align-items:center}.brand-mark{width:34px;height:34px;border:1px solid rgba(156,243,212,.42);border-radius:12px;display:grid;place-items:center;color:var(--mint);font:800 16px Manrope;box-shadow:inset 0 0 18px #6ceec21a}.brand-name{font:700 14px Manrope;letter-spacing:.08em}.brand-sub{color:var(--muted);font-size:11px;margin-top:2px}.top-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}.status-dot{width:7px;height:7px;background:var(--mint);border-radius:50%;box-shadow:0 0 10px var(--mint)}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:#ffffff04}.workspace{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:48px;align-items:center;padding:26px 0 36px}.main{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}.eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#9aaac1;margin:0 0 12px}.main h1{font:600 clamp(26px,3vw,38px) Manrope;letter-spacing:-.035em;margin:0}.subhead{font-size:14px;color:#9aa9be;margin:10px 0 0;max-width:480px;line-height:1.6}
+    .orb-wrap{height:320px;width:320px;display:grid;place-items:center;position:relative;margin:12px 0 4px}.orb-glow{position:absolute;inset:33px;border-radius:50%;background:radial-gradient(circle,rgba(117,173,255,.19),rgba(141,103,238,.08) 45%,transparent 70%);filter:blur(12px);transition:.5s}.orb{width:208px;height:208px;border-radius:50%;position:relative;overflow:hidden;border:1px solid rgba(194,221,255,.43);background:radial-gradient(circle at 33% 25%,#d9efff 0,#8ab8ff 9%,#586bdd 31%,#353c88 53%,#171b43 76%);box-shadow:0 0 55px rgba(91,149,255,.27),inset -18px -25px 45px #080b20,inset 10px 12px 32px #e0f6ff66;transition:transform .6s,filter .6s;animation:float 5s ease-in-out infinite}.orb:before,.orb:after{content:"";position:absolute;inset:-25%;border-radius:46%;background:linear-gradient(120deg,transparent 34%,rgba(178,255,232,.67) 45%,rgba(174,197,255,.25) 52%,transparent 64%);filter:blur(2px);animation:flow 8s linear infinite}.orb:after{inset:12%;background:radial-gradient(ellipse at 40% 33%,#fff9,transparent 35%),linear-gradient(250deg,transparent 30%,#8ef4df44 55%,transparent 72%);animation:flow 6s linear infinite reverse}.ring{position:absolute;border:1px solid rgba(160,200,255,.12);border-radius:50%;width:274px;height:274px;transform:rotateX(68deg) rotateZ(-18deg)}.ring.r2{width:300px;height:300px;transform:rotateX(72deg) rotateZ(48deg);border-color:rgba(186,165,255,.1)}.orb-wrap:after{content:"";position:absolute;bottom:27px;width:118px;height:16px;background:#6e9efb1c;filter:blur(14px);border-radius:50%}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes flow{to{transform:rotate(360deg)}}
+    .listening .orb{filter:hue-rotate(22deg) saturate(1.24);transform:scale(1.045)}.listening .orb-glow{opacity:1;transform:scale(1.25)}.thinking .orb{filter:hue-rotate(-25deg);animation:think 1.15s ease-in-out infinite alternate}@keyframes think{to{transform:scale(.96);filter:brightness(1.3)}}
+    .state{height:22px;font-size:12px;color:#c2d1e7}.state span{color:var(--mint)}.hint{color:#78869c;font-size:11px;margin:4px 0 14px}.mic{width:62px;height:62px;border-radius:22px;border:1px solid #a8caff65;background:linear-gradient(145deg,#293955,#17253d);box-shadow:0 12px 32px #0007,inset 0 1px #fff2;display:grid;place-items:center;transition:.2s}.mic:hover{transform:translateY(-2px);border-color:#b9d9ff}.mic.active{background:linear-gradient(145deg,#735be0,#3b62bb);box-shadow:0 0 35px #6b86ff66}.mic svg{width:21px;height:21px}.mic-label{font-size:11px;color:#8998ae;margin-top:9px}
+    .composer{width:min(570px,100%);display:flex;gap:8px;padding:7px;border:1px solid rgba(183,204,240,.16);border-radius:16px;background:#111a29cc;margin-top:18px;box-shadow:0 14px 45px #0003}.composer input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);padding:10px 12px;font-size:13px}.composer input::placeholder{color:#718097}.send{border:0;border-radius:11px;background:#d9f8ed;color:#10251f;padding:0 16px;font-size:12px;font-weight:700}.send:hover{background:#adf1d7}.quick{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}.quick button{font-size:11px;color:#a9b9d0;background:#ffffff05;border:1px solid var(--line);padding:8px 11px;border-radius:999px}.quick button:hover{border-color:#8caad3;color:#e7f2ff}
+    .sidebar{border:1px solid var(--line);border-radius:22px;background:linear-gradient(160deg,#121d2ddd,#0d1522ee);padding:20px;box-shadow:0 25px 70px #0003}.side-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.side-head h2{font:600 14px Manrope;margin:0}.clear{background:none;border:0;color:#8fa0b8;font-size:11px}.clear:hover{color:white}.metric{padding:13px 0;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.metric:last-of-type{border:0}.metric-label{color:#9babc1;font-size:12px}.metric-value{font:600 14px Manrope}.accent{color:var(--mint)}.empty{border:1px dashed #ffffff1b;border-radius:14px;padding:13px;margin-top:15px;color:#8292aa;font-size:11px;line-height:1.6}.empty strong{color:#c9d8ed;font-weight:500}.activity{max-height:170px;overflow:auto;margin-top:10px}.activity-row{display:flex;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #ffffff0b;font-size:11px;color:#9cacc2}.activity-row b{color:#e7effc;font-weight:500}.rulebox{margin-top:18px;padding:12px;border-radius:13px;background:#a5c4ff0b;border:1px solid #a5c4ff16;color:#9cabc1;font-size:10px;line-height:1.55}.rulebox b{color:#c7d8ef;font-weight:600}.footer{display:flex;justify-content:space-between;gap:18px;border-top:1px solid #ffffff0c;padding-top:16px;color:#73829a;font-size:10px}.footer a{color:#94aac7;text-decoration:none}.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;pointer-events:none;transition:.25s;background:#e6f8f2;color:#10221c;padding:11px 16px;border-radius:12px;font-size:12px;box-shadow:0 8px 30px #0007}.toast.show{opacity:1;transform:translate(-50%,0)}
+    .draft{width:min(570px,100%);margin:13px auto 0;padding:14px;text-align:left;border:1px solid #b9a0ff55;background:linear-gradient(120deg,#9c7aff10,#ffffff05);border-radius:16px}.draft-top{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#c8b7ff}.draft-body{font-size:13px;margin:9px 0;color:#eaf0fa}.draft-meta{font-size:11px;color:#9caac0}.draft-actions{display:flex;gap:8px;margin-top:13px}.draft-actions button{border-radius:9px;border:1px solid var(--line);padding:8px 12px;font-size:11px}.confirm{background:#b3f0d7;color:#11251e;border:0!important;font-weight:700}.discard{background:#ffffff08;color:#b4c1d3}
+    @media(max-width:850px){.workspace{grid-template-columns:1fr;gap:26px;padding-top:30px}.sidebar{max-width:570px;width:100%;margin:auto}.orb-wrap{height:275px;width:275px}.orb{width:182px;height:182px}.ring{width:242px;height:242px}.ring.r2{width:263px;height:263px}.footer{flex-direction:column}.shell{padding:18px 20px 24px}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand"><div class="brand-mark">Z</div><div><div class="brand-name">ZEDBIZ <span style="color:#91a7c7">LENS</span></div><div class="brand-sub">Business assistant · Agent Lab</div></div></div>
+    <div class="top-right"><span class="status-dot"></span><span>LOCAL DEMO</span><span class="pill">EN · Zambia</span></div>
+  </header>
+  <div class="workspace">
+    <main class="main" id="main">
+      <p class="eyebrow">Your business, understood</p>
+      <h1>What happened in your business?</h1>
+      <p class="subhead">Speak naturally or type a quick note. I’ll prepare a record for you to review before it is added.</p>
+      <div class="orb-wrap"><div class="orb-glow"></div><div class="ring"></div><div class="ring r2"></div><div class="orb" aria-hidden="true"></div></div>
+      <div class="state" id="state"><span>Ready</span> · Tell me about a sale or expense</div>
+      <div class="hint" id="hint">Your words stay in this browser demo</div>
+      <button class="mic" id="mic" aria-label="Start voice input" title="Start voice input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/></svg></button>
+      <div class="mic-label" id="micLabel">Tap to speak</div>
+      <form class="composer" id="form"><input id="entry" autocomplete="off" placeholder="e.g. I sold mealie meal for K900 today" aria-label="Describe a business event"/><button class="send">Send</button></form>
+      <div class="quick"><button data-text="I sold mealie meal for K900 today">＋ Record a sale</button><button data-text="I spent K40 on transport today">＋ Record an expense</button><button data-text="How did my business do today?">Show today’s summary</button></div>
+      <div id="draftSlot"></div>
+    </main>
+    <aside class="sidebar">
+      <div class="side-head"><h2>Business snapshot</h2><button class="clear" id="clear">Reset demo</button></div>
+      <div class="metric"><span class="metric-label">Confirmed sales</span><span class="metric-value accent" id="sales">K0.00</span></div>
+      <div class="metric"><span class="metric-label">Confirmed expenses</span><span class="metric-value" id="expenses">K0.00</span></div>
+      <div class="metric"><span class="metric-label">Net cash movement*</span><span class="metric-value" id="net">K0.00</span></div>
+      <div class="metric"><span class="metric-label">Confirmed records</span><span class="metric-value" id="count">0</span></div>
+      <div class="activity" id="activity"></div>
+      <div class="empty" id="empty"><strong>No records yet.</strong><br/>Try a sample entry. Nothing is saved until you confirm it.</div>
+      <div class="rulebox"><b>Demo boundary</b><br/>English entry parsing only. No real AI model, external connection, permanent storage, tax filing or official tax calculation is active in this standalone lab.</div>
+    </aside>
+  </div>
+  <footer class="footer"><span>*Sales minus expenses recorded here; not accounting profit or a bank balance.</span><span>Voice uses browser speech recognition when available. <a href="#" id="about">How this demo works</a></span></footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const records = [];
+  let draft = null, recognition = null, listening = false;
+  const money = n => 'K' + Number(n).toLocaleString('en-ZM',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const setState = (html, mode='') => { $('#state').innerHTML=html; $('#main').classList.toggle('listening',mode==='listening'); $('#main').classList.toggle('thinking',mode==='thinking'); };
+  const toast = msg => { const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500); };
+  function parse(text){
+    const s=text.toLowerCase();
+    if(/\b(summary|how did|total|snapshot|show me)\b/.test(s)) return {kind:'summary'};
+    const sale=/\b(sold|sale|sales|earned|received|customer paid|made)\b/.test(s);
+    const expense=/\b(spent|paid|bought|expense|cost|purchase|purchased)\b/.test(s);
+    const amounts=[...text.matchAll(/(?:k\s*)?([0-9][0-9,]*(?:\.\d{1,2})?)(?:\s*(?:kwacha|zmw))?/gi)].map(m=>Number(m[1].replaceAll(',',''))).filter(n=>Number.isFinite(n)&&n>0);
+    if(sale===expense) return {error:'I couldn’t tell whether this was money received or money spent. Try “I sold items for K200” or “I spent K50 on transport.”'};
+    if(!amounts.length) return {error:'I found the type of event, but not an amount. Please include an amount, for example K200.'};
+    const amount=amounts[amounts.length-1];
+    const category=expense?(/transport|fuel|bus|taxi/.test(s)?'Transport':/stock|goods|mealie|inventory|supplies/.test(s)?'Stock / supplies':/rent/.test(s)?'Rent':'Other expense'):(/mealie|bread|food|shop|goods|product/.test(s)?'Product sale':'Sale');
+    return {kind:expense?'expense':'sale',amount,category,source:text.trim(),date:new Date().toISOString()};
+  }
+  function render(){
+    const sales=records.filter(r=>r.kind==='sale').reduce((a,r)=>a+r.amount,0), expenses=records.filter(r=>r.kind==='expense').reduce((a,r)=>a+r.amount,0);
+    $('#sales').textContent=money(sales);$('#expenses').textContent=money(expenses);$('#net').textContent=money(sales-expenses);$('#count').textContent=records.length;
+    $('#empty').style.display=records.length?'none':'block';
+    $('#activity').innerHTML=records.slice().reverse().map(r=>`<div class="activity-row"><span><b>${r.kind==='sale'?'Sale':'Expense'}</b> · ${escapeHtml(r.category)}</span><span>${money(r.amount)}</span></div>`).join('');
+  }
+  function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function respond(text){
+    $('#draftSlot').innerHTML='';draft=null;setState('<span>Thinking</span> · Organizing your note…','thinking');
+    setTimeout(()=>{
+      const result=parse(text);
+      if(result.kind==='summary'){
+        const sales=records.filter(r=>r.kind==='sale').reduce((a,r)=>a+r.amount,0), expenses=records.filter(r=>r.kind==='expense').reduce((a,r)=>a+r.amount,0);
+        setState(`<span>Ready</span> · You have ${records.length} confirmed record${records.length===1?'':'s'}. Sales ${money(sales)}, expenses ${money(expenses)}, recorded net cash movement ${money(sales-expenses)}.`);
+        $('#hint').textContent='This summary covers confirmed demo entries only.';return;
+      }
+      if(result.error){setState(`<span>Need a little more detail</span> · ${escapeHtml(result.error)}`);$('#hint').textContent='I have not created a record.';return;}
+      draft=result;setState('<span>Review needed</span> · I prepared a draft. Please check it.');$('#hint').textContent='Suggested details are not saved until you confirm.';
+      $('#draftSlot').innerHTML=`<section class="draft"><div class="draft-top"><span>Suggested ${result.kind} · Review</span><span>${money(result.amount)}</span></div><div class="draft-body">${escapeHtml(result.source)}</div><div class="draft-meta">Suggested category: ${escapeHtml(result.category)} · Date: today · Amount: ZMW ${result.amount.toFixed(2)}</div><div class="draft-actions"><button class="confirm" id="confirm">Confirm record</button><button class="discard" id="discard">Discard</button></div></section>`;
+      $('#confirm').onclick=()=>{if(!draft)return;records.push({...draft});draft=null;$('#draftSlot').innerHTML='';render();setState('<span>Recorded</span> · Added to this demo session.');$('#hint').textContent='You can reset the demo at any time.';};
+      $('#discard').onclick=()=>{draft=null;$('#draftSlot').innerHTML='';setState('<span>Ready</span> · Draft discarded.');};
+    },380);
+  }
+  $('#form').addEventListener('submit',e=>{e.preventDefault();const text=$('#entry').value.trim();if(!text)return;$('#entry').value='';respond(text);});
+  document.querySelectorAll('.quick button').forEach(b=>b.addEventListener('click',()=>respond(b.dataset.text)));
+  $('#clear').onclick=()=>{records.splice(0);draft=null;$('#draftSlot').innerHTML='';render();setState('<span>Ready</span> · Demo session cleared.');$('#hint').textContent='Your words stay in this browser demo.';};
+  $('#about').onclick=e=>{e.preventDefault();toast('This is a UI and workflow prototype; it does not call an AI service.');};
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(SpeechRecognition){recognition=new SpeechRecognition();recognition.lang='en-ZA';recognition.interimResults=true;recognition.continuous=false;
+    recognition.onstart=()=>{listening=true;$('#mic').classList.add('active');$('#micLabel').textContent='Listening · tap to stop';setState('<span>Listening</span> · Say a sale or expense.','listening');};
+    recognition.onresult=e=>{let text='';for(let i=e.resultIndex;i<e.results.length;i++)text+=e.results[i][0].transcript;if(e.results[e.results.length-1].isFinal){$('#entry').value=text;respond(text);}};
+    recognition.onerror=e=>{setState('<span>Voice input unavailable</span> · You can type your entry instead.');$('#hint').textContent=`Browser speech recognition: ${e.error}.`;};
+    recognition.onend=()=>{listening=false;$('#mic').classList.remove('active');$('#micLabel').textContent='Tap to speak';if($('#main').classList.contains('listening'))setState('<span>Ready</span> · Tell me about a sale or expense');};
+  } else {$('#mic').disabled=true;$('#mic').style.opacity='.45';$('#micLabel').textContent='Voice recognition is not supported in this browser';}
+  $('#mic').onclick=()=>{if(!recognition){toast('Voice recognition is not available here.');return;}try{if(listening)recognition.stop();else recognition.start();}catch(e){toast('Voice input is already starting.');}};
+  render();
+})();
+</script>
+</body>
+</html>
+
