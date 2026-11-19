@@ -5,6 +5,14 @@ React + Vite + Tailwind CSS, with Lucide icons and Recharts. The app runs **enti
 
 > **DEMO MODE** – all business data is synthetic. Tax figures are illustrative placeholders pending Finance team approval. Nothing here is an official Zambian tax rate, tax advice or a compliance check.
 
+## Standalone Agent Workflow Demo
+
+The `agent-lab/` folder contains a voice-first prototype for exploring the AI agent workflow **separately from the React application**, before deciding how to integrate it. The goal is to observe input capture, clarification, draft review and owner confirmation without changing the app's current transaction flow or assuming a final agent/backend contract.
+
+The current lab uses a small rule-based parsing stub; **it is not connected to an AI model**. It supports a narrow set of English sale and expense phrases, prepares proposed records for owner confirmation, and keeps confirmed entries only in browser memory for the current session. It has no persistent storage, tax calculator, ZRA or Zamtel integration, or connection to the app. Developer B's transaction-classification work remains open for review and can be assessed against a future interface contract once submitted.
+
+Open `agent-lab/index.html` in a browser to explore it. Voice entry depends on browser speech-recognition support and microphone permission. See [the Agent Lab README](agent-lab/README.md) for workflow boundaries and current limitations.
+
 ## Run it
 
 Requires Node.js 18 or newer.
