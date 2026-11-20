@@ -5,6 +5,17 @@ React + Vite + Tailwind CSS, with Lucide icons and Recharts. The app runs **enti
 
 > **DEMO MODE** – all business data is synthetic. Tax figures are illustrative placeholders pending Finance team approval. Nothing here is an official Zambian tax rate, tax advice or a compliance check.
 
+## Standalone Agent Workflow Demo
+
+The agent-lab/ folder is a lightweight, voice-first prototype for testing the assistant workflow separately from the React app before integration. It explores spoken or typed input, synthetic phrase matching, clarification, a correctable draft, owner confirmation and spoken responses.
+
+There is no ZedBiz AI model/API or API key. Text intent matching runs locally in the browser against synthetic phrase examples for sales, expenses and summary requests. Unknown or ambiguous language prompts for clarification. Match strength is a heuristic, not a probability or proof that arbitrary phrases will be understood.
+
+The future two-layer direction is to keep a language/interaction agent separate from Developer B's transaction-intelligence layer: the first prepares a normalized transaction and the second can later return XGBoost classification feedback for the agent to explain. This demo does not call XGBoost or implement that contract; Developer B's work remains open for review. Deterministic financial and tax calculations stay separate from classifier feedback.
+
+Voice replies use browser speech synthesis. Voice capture uses browser speech recognition, which may require microphone permission and a network or browser-managed speech service; no ZedBiz server receives audio. English is the only evaluated language so far. Confirmed data stays in browser memory for the current session; no tax calculations, persistent ledger, ZRA/Zamtel integrations, or app integration are active.
+
+Run instructions, privacy notes and limits are in the Agent Lab README (agent-lab/README.md).
 ## Run it
 
 Requires Node.js 18 or newer.
