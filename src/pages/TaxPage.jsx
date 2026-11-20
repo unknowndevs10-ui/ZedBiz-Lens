@@ -38,7 +38,7 @@ export default function TaxPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Tax position</h1>
-          <p className="mt-1 text-sm text-ink-muted">{business?.name} · Illustrative view</p>
+          <p className="mt-1 text-sm text-ink-muted">{business?.name} � Illustrative view</p>
         </div>
         <Button variant="secondary" icon={Download} loading={downloading} onClick={handleDownload}>Download tax position report</Button>
       </header>
@@ -46,6 +46,7 @@ export default function TaxPage() {
       <Notification tone="warning" className="mt-5" title="Demonstration estimates">
         {data?.disclaimer || 'Illustrative demonstration only. Figures are placeholders pending Finance team approval, not official rates or tax advice.'}
       </Notification>
+      {data?.sourceUrl && <p className="mt-2 text-xs text-ink-muted">{data.taxYear} reference rules � <a className="font-bold text-brand-700 underline" href={data.sourceUrl} target="_blank" rel="noreferrer">Check the current ZRA tax information</a></p>}
 
       {!data && loading ? (
         <LoadingState label="Loading tax position" />
@@ -127,4 +128,5 @@ export default function TaxPage() {
     </div>
   );
 }
+
 
