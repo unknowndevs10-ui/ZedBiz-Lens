@@ -34,15 +34,17 @@
         modelMode = true;
         $('#agentMode').setAttribute('aria-pressed','true');
         $('#agentModeLabel').textContent = 'LOCAL AI · ' + modelName;
-        $('#modeNote').textContent = 'Local model drafts · owner confirmation required';
-        setStatus('Local language model ready. Your input stays on this device.');
+        $('#modeNote').textContent = 'Local intent AI · synthetic data only';
+        setStatus('Local intent model ready. Your input stays on this device.');
       } else {
         $('#agentModeLabel').textContent = 'DEMO MODE';
         $('#agentMode').setAttribute('aria-pressed','false');
       }
+      return localModelAvailable;
     } catch {
       localModelAvailable = false;
       $('#agentModeLabel').textContent = 'DEMO MODE';
+      return false;
     }
   }
   function speak(message) {
@@ -155,7 +157,7 @@
     setStatus('Here is your session summary.');
     speak(answer);
   }
-  function makeDraft(text, intent, amount, strength = null) {
+  function makeDraft(text, intent, amount, strength = null, trainingStatus = '') {
     const kind = intent === 'sale' ? 'sale' : 'expense';
     const category = categoryFor(intent, text);
     const dupe = records.some(record => record.intent === intent && record.amount === amount && record.source.toLowerCase() === text.trim().toLowerCase());
@@ -168,7 +170,9 @@
     }
     draft = {intent,kind,category,amount,source:text.trim(),strength};
     $('#transcript').textContent = `You said: “${text.trim()}”`;
-    const origin = strength === null ? 'Local AI draft · review required' : `Demo match strength · ${Math.round(strength*100)}%`;
+    const origin = strength === null
+      ? (trainingStatus === 'synthetic_examples_only' ? 'AI draft · synthetic training only' : 'AI draft · review required')
+      : `Demo match strength · ${Math.round(strength*100)}%`;
     $('#draftSlot').innerHTML = `<section class="draft"><div class="draft-head"><strong>Check this ${kind}</strong><span>${origin}</span></div><div class="draft-source">${escapeHtml(text.trim())}</div><div class="draft-detail">Confirm or correct the suggested type and amount.</div><div class="draft-actions"><label class="sr-only" for="draftType">Transaction type</label><select id="draftType" aria-label="Transaction type"><option value="sale" ${intent==='sale'?'selected':''}>Sale</option><option value="expense" ${intent==='expense'?'selected':''}>Expense</option></select><label class="sr-only" for="draftAmount">Amount in kwacha</label><input id="draftAmount" inputmode="decimal" type="number" min="0.01" step="0.01" value="${amount.toFixed(2)}" aria-label="Amount in kwacha"/><button class="confirm" id="confirm">Confirm</button><button id="discard">Discard</button></div></section>`;
     setStatus('Review the suggested record before confirming.');
     const response = `I drafted a ${kind} for ${money(amount)}${strength === null ? '' : `, categorized as ${category}`}. Please check and confirm it, or correct the type and amount.`;
@@ -221,7 +225,10 @@
       }
       const source = agentContext ? `${agentContext.original} — ${input}` : input;
       agentContext = null;
-      makeDraft(source, result.intent, result.amount, null);
+      if (!Number.isFinite(Number(result.amount)) || Number(result.amount) <= 0) {
+        throw new Error('The AI did not provide a valid amount. Please use demo mode or enter the amount clearly.');
+      }
+      makeDraft(source, result.intent, Number(result.amount), null, result.trainingDataStatus);
     } catch (error) {
       $('#transcript').textContent = `${error.message} Switch to demo mode or try again.`;
       setStatus('Local AI is unavailable right now.', 'clarify');
@@ -282,13 +289,16 @@
 
   $('#agentMode').addEventListener('click', () => {
     if (!localModelAvailable) {
-      toast('Local AI is not ready. Start Ollama, install the model, and run server.mjs.');
+      checkLocalModel().then(available => {
+        if (!available) toast('Local AI is not ready. Start the NLU API and try again.');
+        else $('#agentMode').click();
+      });
       return;
     }
     modelMode = !modelMode;
     $('#agentMode').setAttribute('aria-pressed',String(modelMode));
     $('#agentModeLabel').textContent = modelMode ? `LOCAL AI · ${modelName}` : 'DEMO MODE';
-    $('#modeNote').textContent = modelMode ? 'Local model drafts · owner confirmation required' : 'Demo phrase matching · no AI API';
+    $('#modeNote').textContent = modelMode ? 'Local intent AI · synthetic data only' : 'Demo phrase matching · no AI API';
     agentContext = null;
     setStatus(modelMode ? 'Local language model is on. Your input stays on this device.' : 'Synthetic phrase demo is on.');
   });
