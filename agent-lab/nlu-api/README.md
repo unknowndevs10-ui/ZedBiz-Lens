@@ -34,7 +34,7 @@ Example request:
 }
 ```
 
-Tax assumptions are isolated in `data/tax_rules_demo.json`. The response intentionally shows both `excess_only` and `total_turnover` turnover-tax interpretations and leaves `selected_mode` unset pending Finance validation. VAT payable is not calculated because the demo does not yet classify taxable, zero-rated, exempt, or input-tax records. All tax outputs are illustrative and must not be used for filing.
+Tax assumptions are loaded from the repository-root `tax_rules.json`, shared with the React tax-readiness screen. The response intentionally shows both `excess_only` and `total_turnover` turnover-tax interpretations and leaves `selected_mode` unset pending Finance validation. VAT payable is not calculated because the demo does not yet classify taxable, zero-rated, exempt, or input-tax records. All tax outputs are illustrative and must not be used for filing.
 
 ## Safety and evaluation
 
