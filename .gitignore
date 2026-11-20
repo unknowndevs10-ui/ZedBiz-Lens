@@ -4,5 +4,10 @@ dist
 .env.local
 *.log
 .npm-cache-task
+.vercel-cli-cache/
+.vite-cache/
 .DS_Store
+
+.vercel
+.env*
 
