@@ -11,12 +11,34 @@ from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Literal
 
-RULES_PATH = Path(__file__).resolve().parent / "data" / "tax_rules_demo.json"
+RULES_PATH = Path(__file__).resolve().parents[2] / "tax_rules.json"
 
 
 def load_tax_rules(path: Path = RULES_PATH) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
-        rules = json.load(handle)
+        source = json.load(handle)
+    # Normalize the shared Dev B rule file once so the calculator and UI use
+    # the same approved reference values and tax-base labels.
+    source_tt = source["turnover_tax"]
+    source_vat = source["vat"]
+    rules = {
+        "meta": {
+            **source.get("meta", {}),
+            "status": "demo_pending_finance_validation",
+        },
+        "turnover_tax": {
+            "annual_ceiling": source_tt["annual_ceiling"],
+            "rate": source_tt["rate"],
+            "nil_band_annual": source_tt["nil_band_upper"],
+            "nil_band_monthly": source_tt["nil_band_upper"] / 12,
+            "modes": list(source_tt["calculation_modes"]),
+        },
+        "vat": {
+            "standard_rate": source_vat["standard_rate"],
+            "registration_threshold_annual": source_vat["registration_threshold_annual"],
+            "voluntary_registration_floor_annual": source_vat["voluntary_registration_floor"],
+        },
+    }
     # Fail closed if a required assumption is missing or malformed.
     tt = rules["turnover_tax"]
     vat = rules["vat"]
