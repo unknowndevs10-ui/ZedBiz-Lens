@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "jurisdiction": "Zambia",
+    "authority": "Zambia Revenue Authority (ZRA)",
+    "currency": "ZMW",
+    "tax_year": 2026,
+    "effective_from": "2026-01-01",
+    "last_verified": "2026-11-19",
+    "disclaimer": "Verify against current ZRA guidance and Practice Notes before filing. Rates and thresholds change with each national budget."
+  },
+  "turnover_tax": {
+    "annual_ceiling": 5000000,
+    "rate": 0.05,
+    "nil_band_upper": 30000,
+    "calculation_modes": {
+      "excess_only": "Rate applies only to turnover ABOVE nil_band_upper (2026 Budget treatment: 0% on first K30,000, 5% on K30,001 to K5,000,000).",
+      "total_turnover": "Rate applies to the ENTIRE turnover once turnover exceeds nil_band_upper (flat 5% of gross turnover, no nil band relief)."
+    },
+    "default_mode": "excess_only",
+    "bands": [
+      {"name": "Nil band", "from": 0, "to": 30000, "rate": 0.0},
+      {"name": "Turnover tax band", "from": 30000, "to": 5000000, "rate": 0.05}
+    ],
+    "above_ceiling_regime": "Income tax (company/individual) applies when annual turnover exceeds the ceiling",
+    "no_expense_deductions": true,
+    "excluded_activities_note": "Certain professional/consultancy services are excluded by statute from turnover tax and taxed under income tax.",
+    "late_payment_penalty_per_month": 0.005,
+    "prior_year_reference": {
+      "2025": {"nil_band_upper": 12000, "annual_ceiling": 5000000, "rate": 0.05}
+    }
+  },
+  "vat": {
+    "standard_rate": 0.16,
+    "registration_threshold_annual": 800000,
+    "registration_threshold_quarterly": 200000,
+    "quarterly_threshold_note": "Sources differ: some treat K200,000 in any 3 months as triggering mandatory registration; ZRA brochure places it under voluntary registration. Treated here as a warning trigger.",
+    "voluntary_registration_floor": 400000,
+    "registration_window_days": 30,
+    "overlap_note": "Businesses between K800,000 and K5,000,000 may need BOTH turnover tax and VAT registration."
+  },
+  "filing": {
+    "turnover_tax_due_day_of_month": 14,
+    "vat_return_due_day_of_month": 18
+  }
+}
