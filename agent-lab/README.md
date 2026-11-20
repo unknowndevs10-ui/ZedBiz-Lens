@@ -1,59 +1,46 @@
 # ZedBiz Lens — Agent Lab
 
-A lightweight prototype for developing the language and interaction layer independently from the main app. The calm interface follows the ZedBiz palette: teal `#1F6F6B`, amber `#E0A84B`, pale surface `#F2F6F6`, dark ink `#1E2A2F`, and muted text `#4F5E64`.
+A lightweight, AI-based language-understanding demo kept separate from the main app while its workflow is evaluated. The interface follows the ZedBiz palette: teal `#1F6F6B`, amber `#E0A84B`, pale surface `#F2F6F6`, dark ink `#1E2A2F`, and muted text `#4F5E64`.
 
-## Run the local-model build
+## Run the AI mode
 
-Requirements: Node.js 18+ and [Ollama](https://ollama.com/download) installed on this computer. Ollama is expected at `http://127.0.0.1:11434` by default.
+The AI layer is a small local scikit-learn intent classifier exposed by FastAPI. It is trained on the synthetic examples currently checked into `nlu-api/`; this demonstrates the full path but is not validated for real businesses.
 
-1. Download the default local model once (this requires an internet connection and local disk space):
-
-   ```bash
-   ollama pull qwen3.5:0.8b
-   ```
-
-2. Make sure Ollama is running, then start the Agent Lab server from this folder:
-
-   ```bash
-   node server.mjs
-   ```
-
-3. Open `http://127.0.0.1:4175`. The header reports **LOCAL AI** when the selected model is installed and reachable. Select **DEMO MODE** to return to the synthetic phrase matcher.
-
-The default is the smaller Qwen 3.5 0.8B model. It is a hardware-friendly starting point, not a quality guarantee; evaluate its extraction and clarification behavior before relying on it. A 2B option is available if the computer has enough free memory, but this laptop could not start the 2B model during the initial attempt. The default can be changed with `ZEDBIZ_MODEL` before starting the server. The Ollama URL can be changed with `OLLAMA_URL`. For example, in PowerShell:
+**Terminal 1 — train and start the NLU API:**
 
 ```powershell
-$env:ZEDBIZ_MODEL = 'qwen3.5:2b'
+cd nlu-api
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python train.py
+uvicorn app:app --host 127.0.0.1 --port 4176
+```
+
+**Terminal 2 — serve the UI and local proxy** from `agent-lab/`:
+
+```powershell
 node server.mjs
 ```
 
-The server binds to `127.0.0.1` only. The browser sends text to this local server, which calls Ollama on this same computer. This build does not call a paid hosted AI API and needs no AI API key. A model must still be downloaded to enable Local AI. If no model is installed or Ollama is stopped, the UI remains usable in demo phrase mode.
+Open `http://127.0.0.1:4175`. When the NLU service is available, AI mode is offered. The API is local and uses no hosted AI API key. Stop both terminal processes when finished to free memory.
 
-## What the local language agent does
+## What the AI does
 
-- Interprets a sale, expense, or summary request using the local model, rather than only matching a short list of example phrases.
-- Requests a missing amount or asks for clarification when the model cannot safely form a draft.
-- Returns a constrained structured response and shows sale/expense drafts for the owner to correct and confirm.
-- Does not calculate tax, classify taxability, infer profit, save a permanent ledger, scan receipts, or connect to ZRA/Zamtel.
-- Leaves a clear seam for the separate future transaction-intelligence layer, pending Developer B's findings.
+- A word and character TF-IDF pipeline with a class-weighted linear SVM predicts sale, expense, or summary intent.
+- Simple deterministic parsing extracts explicit numeric amounts. Multiple or missing amounts trigger a question instead of a guess.
+- Sale and expense suggestions appear as editable drafts. The owner must confirm before the entry affects session totals.
+- Model outputs identify their training status. The current model is trained on 36 synthetic phrases, and its random held-out result is only a plumbing check.
+- Demo mode remains available as a fallback and comparison path.
 
-The model is a language helper, not a source of truth. Its output can be wrong. A person's confirmation remains required. The current total is confirmed sales minus confirmed expenses; it is not gross profit, taxable profit, or bank balance.
+## Boundaries and next work
 
-## Demo mode
-
-The synthetic phrase matcher is retained as a fallback and comparison mode. It handles a narrow set of English sale, expense, and summary examples, including some spoken English number words. Its displayed match strength is a heuristic—not model confidence and not measured accuracy.
+- The current classifier does not understand all languages, calculate profit or tax, assign taxability, scan receipts, save to a permanent ledger, or connect to ZRA/Zamtel.
+- Recorded sales minus expenses are cash movement for this temporary session, not gross profit, taxable profit, or bank balance.
+- Developer B's transaction classifier remains a separate downstream component and is not implemented by this AI service.
+- Before any integration claim, replace the synthetic phrases with reviewed Zambian examples, split evaluation by speaker/business, report per-intent performance, and measure CPU latency and memory. Unsupported and low-margin input must keep asking for clarification.
 
 ## Voice and privacy limits
 
-Microphone capture uses the browser's Web Speech Recognition implementation where available. Browser support varies and recognition may rely on a browser-managed network service. Spoken replies use browser speech synthesis and installed voices. The Ollama language-model request itself stays on the local computer, but browser speech recognition may process audio outside the demo. Type instead of speaking if that is unsuitable.
-
-The prototype supports only the English interaction patterns currently evaluated. It does not claim reliable Bemba, Nyanja, or other local-language support. Test local languages with fluent speakers before making a support claim. No data is persisted by the demo after the page closes.
-
-## Architecture direction
-
-1. **Language/interaction layer:** text or speech → clarification → normalized draft → owner confirmation.
-2. **Transaction intelligence layer:** later, pass structured transaction features to the classifier selected with Developer B. XGBoost is a proposal, not yet a validated decision.
-3. **Deterministic calculation layer:** approved business and tax formulas calculate results from explicit inputs. Neither model should invent or calculate tax amounts.
-
-Agree and version the interface before integrating these pieces into the main app. Model classification scores need evaluation and uncertainty handling; they must not silently become tax decisions.
+Microphone capture uses the browser's Web Speech Recognition implementation where available. Browser support varies and recognition may rely on a browser-managed network service. Spoken replies use browser speech synthesis. The NLU request itself stays on this computer; voice recognition may process audio outside the demo. English is the only language currently represented in the synthetic set; Bemba and Nyanja are not validated.
 
