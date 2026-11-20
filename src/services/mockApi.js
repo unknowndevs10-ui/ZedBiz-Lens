@@ -1,13 +1,12 @@
 // Mock backend. Persists to localStorage so the demo survives refreshes.
 // Method names and return shapes mirror services/api.js - keep the two in step.
 import { config } from '../config';
-import { BUSINESSES, generateSeedTransactions } from '../data/mockData';
-import { addDays, diffDays, todayISO } from '../utils/format';
+import { todayISO } from '../utils/format';
 import { extractTransactions } from '../utils/mockExtraction';
 import { buildDashboard, buildTaxPosition } from '../utils/finance';
 import { buildFinancialReportPdf, buildTaxReportPdf } from '../utils/reportPdf';
 
-const STORAGE_KEY = 'zedbiz-lens:demo-data:v1';
+const STORAGE_KEY = 'zedbiz-lens:business-ledger:v2';
 const PROFILE_KEY = 'zedbiz-lens:business-profile:v1';
 const wait = (ms = config.mockLatencyMs) => new Promise((resolve) => setTimeout(resolve, ms));
 let cache = null;
@@ -21,11 +20,7 @@ export function setMockStorageScope(userId = 'guest') {
   cache = null;
 }
 
-function seed() {
-  const transactions = [];
-  BUSINESSES.forEach((business) => transactions.push(...generateSeedTransactions(business)));
-  return { seededOn: todayISO(), transactions };
-}
+function seed() { return { transactions: [] }; }
 
 function persist(state) {
   try {
@@ -46,11 +41,9 @@ function load() {
   if (!state || !Array.isArray(state.transactions)) {
     state = seed();
     persist(state);
-  } else if (state.seededOn !== todayISO()) {
-    // Slide the synthetic history forward so the demo always ends today.
-    const shift = diffDays(todayISO(), state.seededOn);
-    state.transactions = state.transactions.map((tx) => (tx.synthetic ? { ...tx, date: addDays(tx.date, shift) } : tx));
-    state.seededOn = todayISO();
+  } else if (state.transactions.some((tx) => tx.synthetic || tx.businessId !== 'my-business')) {
+    // Hide the old shared demo ledgers while preserving records the owner entered.
+    state.transactions = state.transactions.filter((tx) => !tx.synthetic && tx.businessId === 'my-business');
     persist(state);
   }
   cache = state;
@@ -70,7 +63,7 @@ function customBusiness() {
   return null;
 }
 
-const businessById = (id) => [customBusiness(), ...BUSINESSES].filter(Boolean).find((business) => business.id === id) || BUSINESSES[0];
+const businessById = () => customBusiness() || { id: 'my-business', name: 'My business', kind: 'Business', location: 'Zambia' };
 
 function validatePatch(patch = {}) {
   if (patch.amount !== undefined && !(Number(patch.amount) > 0)) throw new Error('Amount must be greater than zero.');
@@ -93,7 +86,7 @@ function applyChange(id, change) {
 export const mockApi = {
   async listBusinesses() {
     await wait(120);
-    return [...BUSINESSES, customBusiness()].filter(Boolean);
+    return [businessById()];
   },
 
   async getTransactions({ businessId }) {
@@ -134,7 +127,7 @@ export const mockApi = {
     if (source.length < 3 || source.length > 500) throw new Error('The source note must be between 3 and 500 characters.');
     if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000_000_000) throw new Error('Enter an amount greater than zero.');
     if (!['income', 'expense'].includes(draft?.type)) throw new Error('The agent can only draft an income or expense entry.');
-    if (!businessId || !BUSINESSES.some((business) => business.id === businessId)) throw new Error('Choose a demo business first.');
+    if (businessId !== 'my-business') throw new Error('Choose your business workspace first.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(draft?.date || '')) throw new Error('Choose a valid date.');
     const state = load();
     const entryId = `agent-${Date.now()}`;
