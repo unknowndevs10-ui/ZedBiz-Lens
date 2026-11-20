@@ -30,7 +30,7 @@ export default function ReportsPage() {
     <div>
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight">Reports</h1>
-        <p className="mt-1 text-sm text-ink-muted">{business?.name} · Download PDF reports built from your confirmed entries.</p>
+        <p className="mt-1 text-sm text-ink-muted">{business?.name} � Download PDF reports built from your confirmed entries.</p>
       </header>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
@@ -70,8 +70,8 @@ export default function ReportsPage() {
               <PreviewRow label="Turnover in period" value={formatKwacha(taxData.turnover.period)} />
               <PreviewRow label="Projected annual turnover" value={formatKwacha(taxData.turnover.annualised)} />
               <PreviewRow label="VAT threshold progress indicator" value={formatPercent(taxData.vat.percent, 0)} strong />
-              <PreviewRow label="Turnover-tax scenario · excess-only" value={taxData.turnoverEstimate.aboveCeiling ? 'Above reference ceiling · not estimated' : formatKwacha(taxData.turnoverEstimate.excessOnly)} />
-              <PreviewRow label="Turnover-tax scenario · total turnover" value={taxData.turnoverEstimate.aboveCeiling ? 'Above reference ceiling · not estimated' : formatKwacha(taxData.turnoverEstimate.totalTurnover)} />
+              <PreviewRow label="Turnover-tax scenario � excess-only" value={taxData.turnoverEstimate.aboveCeiling ? 'Above reference ceiling � not estimated' : formatKwacha(taxData.turnoverEstimate.excessOnly)} />
+              <PreviewRow label="Turnover-tax scenario � total turnover" value={taxData.turnoverEstimate.aboveCeiling ? 'Above reference ceiling � not estimated' : formatKwacha(taxData.turnoverEstimate.totalTurnover)} />
               <PreviewRow label="Income tax / VAT payable" value="Not calculated" />
             </dl>
           )}
@@ -80,3 +80,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
