@@ -1,25 +1,58 @@
-import { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Mic, MicOff } from 'lucide-react';
 import Button from '../common/Button';
 import Notification from '../common/Notification';
 import { Textarea } from '../common/FormControls';
 
-const EXAMPLES = [
-  { label: 'Retail shop', text: 'Bought stock for K500, sold goods worth K1200 and paid K100 for transport.' },
-  { label: 'Hair salon', text: 'Braided hair for a client K250, another client K180, bought hair products K300.' },
-  { label: 'Market trader', text: 'Sold tomatoes K850 at the market, paid market levy K40, bus fare K60 yesterday.' },
-];
-
 /** Free-text entry composer. `onSubmit(text)` must return a promise; rejections show inline. */
-export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = false }) {
+export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = false, language = 'English' }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => () => {
+    recognitionRef.current?.abort?.();
+    recognitionRef.current = null;
+  }, []);
+
+  function toggleListening() {
+    if (listening) {
+      recognitionRef.current?.stop?.();
+      setListening(false);
+      return;
+    }
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      setError('Voice input is unavailable in this browser. Type your note instead.');
+      return;
+    }
+    const recognizer = new Recognition();
+    recognitionRef.current = recognizer;
+    recognizer.lang = language === 'Nyanja' || language === 'Bemba' ? 'en-ZM' : 'en-ZA';
+    recognizer.continuous = false;
+    recognizer.interimResults = false;
+    recognizer.onresult = (event) => {
+      const transcript = Array.from(event.results || []).map((result) => result[0]?.transcript || '').join(' ').trim();
+      if (transcript) setText((previous) => `${previous.trim()}${previous.trim() ? ' ' : ''}${transcript}`);
+      setError('');
+    };
+    recognizer.onerror = (event) => {
+      if (event.error !== 'aborted' && event.error !== 'no-speech') setError('Voice input could not start. Check microphone permission or type your note.');
+      setListening(false);
+    };
+    recognizer.onend = () => setListening(false);
+    setError('');
+    setListening(true);
+    try { recognizer.start(); }
+    catch { setListening(false); setError('Voice input could not start. Check microphone permission or type your note.'); }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
     if (!text.trim()) {
-      setError('Write what happened in your business first, or try one of the examples.');
+      setError('Write what happened in your business first.');
       return;
     }
     setBusy(true);
@@ -48,7 +81,7 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
           setText(e.target.value);
           if (error) setError('');
         }}
-        placeholder="Bought stock for K500, sold goods worth K1200 and paid K100 for transport."
+        placeholder="For example: Sold goods for K250 and paid K40 for transport."
         aria-describedby={error ? `${id}-error` : `${id}-hint`}
         aria-invalid={error ? true : undefined}
         disabled={busy}
@@ -64,27 +97,17 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-[13px] text-ink-muted">Try an example:</span>
-        {EXAMPLES.map((ex) => (
-          <button
-            key={ex.label}
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setText(ex.text);
-              setError('');
-            }}
-            className="rounded-md border border-line bg-[#121a1b] px-2.5 py-1 text-[13px] font-semibold text-brand-700 hover:bg-brand-50 focus-ring disabled:opacity-50"
-          >
-            {ex.label}
-          </button>
-        ))}
+        <button type="button" onClick={toggleListening} disabled={busy} aria-pressed={listening} className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-line bg-[#121a1b] px-3 text-xs font-bold text-ink-muted hover:border-brand hover:text-ink disabled:opacity-50">
+          {listening ? <MicOff className="h-4 w-4 text-accent-800" /> : <Mic className="h-4 w-4 text-brand-700" />}{listening ? 'Stop listening' : 'Speak entry'}
+        </button>
+        {listening && <span role="status" className="text-xs text-brand-700">Listening. Say the amount and what happened.</span>}
       </div>
 
       <Button type="submit" size="lg" className="mt-5 w-full sm:w-auto" icon={ArrowRight} loading={busy}>
         {busy ? 'Processing' : 'Process entry'}
       </Button>
-      <p className="mt-3 text-xs text-ink-muted">Demo: entries are read by a simple rule-based simulation, not an AI model. You review everything before it counts.</p>
+      <p className="mt-3 text-xs leading-5 text-ink-muted">This pilot prepares a draft from your note for you to check. Voice recognition is provided by your browser; English is the validated input language, and Bemba/Nyanja recognition still needs native-speaker testing. Use typing if recognition is unclear.</p>
     </form>
   );
 }
+
