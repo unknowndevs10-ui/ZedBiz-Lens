@@ -16,7 +16,7 @@ export default function StatCard({ label, value, delta = null, deltaUnit = '%', 
     );
   }
   return (
-    <div className={`bg-white p-4 sm:p-5 ${className}`}>
+    <div className={`bg-[#121a1b] p-4 sm:p-5 ${className}`}>
       <p className="text-[13px] font-semibold text-ink-muted">{label}</p>
       <p className={`mt-1.5 truncate font-extrabold tabular-nums tracking-tight ${emphasis ? 'text-2xl' : 'text-xl'}`}>{value}</p>
       {deltaEl}

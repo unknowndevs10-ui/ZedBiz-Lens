@@ -24,7 +24,7 @@ export default function Hero() {
   }
 
   return (
-    <section className="border-b border-line bg-white">
+    <section className="border-b border-line bg-[#121a1b]">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-10 sm:px-6 lg:grid-cols-12 lg:gap-14 lg:pb-24 lg:pt-20">
         <div className="lg:col-span-6">
           <h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl">Your business. Your numbers. Your clarity.</h1>

@@ -37,7 +37,7 @@ function AgentOrb({ thinking = false }) {
 }
 
 export default function AgentPage() {
-  const { business, businessId, transactions, submitAgentDraft } = useData();
+  const { business, businessProfile, businessId, transactions, submitAgentDraft } = useData();
   const { toast } = useToast();
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -46,7 +46,7 @@ export default function AgentPage() {
   const [pendingDraft, setPendingDraft] = useState(null);
   const [eventVersion, setEventVersion] = useState(0);
   const events = useMemo(() => getAgentEvents(businessId), [businessId, eventVersion]);
-  const [messages, setMessages] = useState([{ id: 'welcome', role: 'agent', text: `Hi${business?.name ? `, ${business.name}` : ''}. I can prepare a transaction draft or summarize the confirmed demo records. You stay in control of every change.` }]);
+  const [messages, setMessages] = useState([{ id: 'welcome', role: 'agent', text: `Hi${businessProfile?.businessName ? `, ${businessProfile.businessName}` : business?.name ? `, ${business.name}` : ''}. I can prepare a transaction draft or summarize the confirmed records for this workspace. You stay in control of every change.` }]);
   const sampleEvents = useMemo(() => getSampleAgentEvents(business?.name), [business?.name]);
   const supportsVoice = typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
 
@@ -75,7 +75,7 @@ export default function AgentPage() {
     addMessage('owner', text);
     setBusy(true);
     try {
-      const result = await interpretAgentInput(text);
+      const result = await interpretAgentInput(text, businessProfile);
       if (result.kind === 'clarify') {
         addMessage('agent', result.message, { label: 'Needs a clearer instruction', reasons: ['low_or_unsupported_intent'] });
         saveLog('clarify', 'The model held an unclear note and asked for clarification.', result.prediction?.intent || 'unknown');
@@ -84,7 +84,7 @@ export default function AgentPage() {
       }
       if (result.kind === 'summary') {
         const summary = await insightsService.getDashboard({ businessId, period: '30d' });
-        const response = `For the last 30 days, the confirmed demo ledger shows ${formatKwacha(summary.summary.sales)} in sales, ${formatKwacha(summary.summary.expenses)} in expenses, and ${formatKwacha(summary.summary.netProfit)} net profit before tax. This is a deterministic 30-day summary, even if your wording asked about a shorter period.`;
+        const response = `For ${business?.name || 'this business'} in the last 30 days, the confirmed ledger shows ${formatKwacha(summary.summary.sales)} in sales, ${formatKwacha(summary.summary.expenses)} in expenses, and ${formatKwacha(summary.summary.netProfit)} net profit before tax. This is a deterministic 30-day summary, even if your wording asked about a shorter period.`;
         addMessage('agent', response, { label: '30-day summary tool', stats: summary.summary });
         saveLog('summary', 'Calculated a 30-day summary from confirmed demo entries.', 'summary');
         speak(response);
@@ -169,6 +169,7 @@ export default function AgentPage() {
           <p className="eyebrow">ZEDBIZ LENS · AGENT LAB</p>
           <h1 className="mt-2 text-2xl font-extrabold tracking-tight">A calm assistant for the work behind the numbers.</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">It can sort an instruction, prepare a record, and run a clear summary tool. Every record waits for you to review it.</p>
+          {businessProfile ? <p className="mt-3 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-line bg-[#121a1b] px-3 py-2 text-xs text-ink-muted"><span className="font-bold text-ink">Workspace context:</span>{businessProfile.businessName} · {businessProfile.businessType}{businessProfile.location ? ` · ${businessProfile.location}` : ''} · records by {businessProfile.recordChannels.map((channel) => channel.replace('_', ' ')).join(', ')} · {businessProfile.language} preference</p> : <p className="mt-3 text-xs text-ink-muted">Set up your own ledger on the <Link to="/app/profile" className="font-bold text-brand-700 underline">business profile page</Link>.</p>}
         </div>
         <SampleStatus label="Synthetic model · demo" />
       </header>
@@ -193,7 +194,7 @@ export default function AgentPage() {
                 <div className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === 'owner' ? 'rounded-br-md bg-brand text-white' : 'rounded-bl-md bg-surface text-ink'}`}>
                   <p>{message.text}</p>
                   {message.details?.label && <p className={`mt-2 text-[10px] font-extrabold uppercase tracking-[0.12em] ${message.role === 'owner' ? 'text-white/70' : 'text-brand-700'}`}>{message.details.label}</p>}
-                  {message.details?.stats && <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-lg bg-white px-2.5 py-1.5 font-semibold text-ink">Sales {formatKwacha(message.details.stats.sales)}</span><span className="rounded-lg bg-white px-2.5 py-1.5 font-semibold text-ink">Expenses {formatKwacha(message.details.stats.expenses)}</span><span className="rounded-lg bg-white px-2.5 py-1.5 font-semibold text-ink">Net {formatKwacha(message.details.stats.netProfit)}</span></div>}
+                  {message.details?.stats && <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-lg bg-[#121a1b] px-2.5 py-1.5 font-semibold text-ink">Sales {formatKwacha(message.details.stats.sales)}</span><span className="rounded-lg bg-[#121a1b] px-2.5 py-1.5 font-semibold text-ink">Expenses {formatKwacha(message.details.stats.expenses)}</span><span className="rounded-lg bg-[#121a1b] px-2.5 py-1.5 font-semibold text-ink">Net {formatKwacha(message.details.stats.netProfit)}</span></div>}
                   {message.details?.reasons && <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-muted">{message.details.reasons.map((reason) => <li key={reason} className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-brand" />{reason.replaceAll('_', ' ')}</li>)}</ul>}
                 </div>
               </div>
@@ -203,7 +204,7 @@ export default function AgentPage() {
               <div className="rounded-2xl border border-brand/20 bg-brand-50/70 p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div><p className="text-sm font-extrabold text-brand-800">Check the suggested entry</p><p className="mt-1 text-xs text-ink-muted">The model proposes. You decide whether to add it.</p></div>
-                  <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-brand-800">Predicted type · review required</span>
+                  <span className="rounded-full bg-[#121a1b] px-2.5 py-1 text-xs font-bold text-brand-800">Predicted type · review required</span>
                 </div>
                 <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-4">
                   <div><dt className="text-xs text-ink-muted">Type</dt><dd className="mt-0.5 font-bold">{pendingDraft.type === 'income' ? 'Sale' : 'Expense'}</dd></div>
@@ -211,13 +212,13 @@ export default function AgentPage() {
                   <div><dt className="text-xs text-ink-muted">Category</dt><dd className="mt-0.5 font-bold">{pendingDraft.category}</dd></div>
                   <div><dt className="text-xs text-ink-muted">Date</dt><dd className="mt-0.5 font-bold">{formatDate(pendingDraft.date)}</dd></div>
                 </dl>
-                <p className="mt-3 rounded-lg bg-white/80 px-3 py-2 text-xs text-ink-muted">{pendingDraft.description}</p>
+                <p className="mt-3 rounded-lg bg-[#0e1516]/80 px-3 py-2 text-xs text-ink-muted">{pendingDraft.description}</p>
                 <div className="mt-4 flex flex-wrap gap-2"><Button icon={Check} onClick={confirmDraft} loading={busy}>Add to review queue</Button><Button variant="secondary" icon={Trash2} onClick={discardDraft} disabled={busy}>Discard draft</Button></div>
                 {pendingDraft.type === 'income' && <p className="mt-3 text-xs font-medium text-accent-800">Tax label is set to “unsure” until you review it. The agent never makes the tax decision.</p>}
               </div>
             )}
 
-            <form onSubmit={(event) => { event.preventDefault(); handlePrompt(input); }} className="rounded-2xl border border-line bg-white p-2 shadow-card">
+            <form onSubmit={(event) => { event.preventDefault(); handlePrompt(input); }} className="rounded-2xl border border-line bg-[#121a1b] p-2 shadow-card">
               <label className="sr-only" htmlFor="agent-message">Tell the agent what happened or ask about your business</label>
               <textarea id="agent-message" value={input} onChange={(event) => setInput(event.target.value)} maxLength={500} rows={2} placeholder="For example: I sold bread for K120" className="field min-h-20 resize-y border-0 bg-transparent shadow-none focus:ring-0" disabled={busy} />
               <div className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-line px-1 pt-2">
@@ -235,7 +236,7 @@ export default function AgentPage() {
             <p className="px-1 text-[11px] leading-5 text-ink-muted">Voice recognition is browser-provided and may use that browser’s speech service. Use typing for this local-only demo. Voice is English only; local-language support needs its own data and validation.</p>
 
             <div className="flex flex-wrap gap-2 pt-1" aria-label="Try a sample instruction">
-              {QUICK_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => handlePrompt(prompt)} disabled={busy} className="focus-ring rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink-muted transition hover:border-brand/30 hover:bg-brand-50 hover:text-brand-800 disabled:opacity-50">{prompt}</button>)}
+              {QUICK_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => handlePrompt(prompt)} disabled={busy} className="focus-ring rounded-full border border-line bg-[#121a1b] px-3 py-1.5 text-xs font-semibold text-ink-muted transition hover:border-brand/30 hover:bg-brand-50 hover:text-brand-800 disabled:opacity-50">{prompt}</button>)}
             </div>
           </div>
         </Card>
@@ -267,7 +268,7 @@ export default function AgentPage() {
           </Card>
 
           <Card className="border-brand/15 bg-brand-50/50 p-4"><div className="flex gap-3"><Headphones className="mt-0.5 h-4 w-4 shrink-0 text-brand" /><div><p className="text-xs font-bold">Designed for a gradual rollout</p><p className="mt-1 text-xs leading-5 text-ink-muted">This synthetic English baseline is a wiring demo only. Measure real-world intent, accent, and language performance before adding a model to live records.</p><Link to="/app/transactions" className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-brand-800 hover:underline">Review transaction queue <ArrowRight className="h-3.5 w-3.5" /></Link></div></div></Card>
-          <button type="button" onClick={() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setMessages([{ id: 'welcome-reset', role: 'agent', text: `Hi${business?.name ? `, ${business.name}` : ''}. I can prepare a transaction draft or summarize the confirmed demo records. You stay in control of every change.` }]); setPendingDraft(null); }} className="focus-ring flex items-center gap-2 rounded-lg px-2 py-1 text-xs font-semibold text-ink-muted hover:bg-white"><RotateCcw className="h-3.5 w-3.5" />Clear conversation</button>
+          <button type="button" onClick={() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setMessages([{ id: 'welcome-reset', role: 'agent', text: `Hi${business?.name ? `, ${business.name}` : ''}. I can prepare a transaction draft or summarize the confirmed demo records. You stay in control of every change.` }]); setPendingDraft(null); }} className="focus-ring flex items-center gap-2 rounded-lg px-2 py-1 text-xs font-semibold text-ink-muted hover:bg-[#121a1b]"><RotateCcw className="h-3.5 w-3.5" />Clear conversation</button>
         </aside>
       </div>
     </div>

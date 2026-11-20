@@ -12,7 +12,7 @@ const SERIES = [
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-line bg-white px-3 py-2 text-xs shadow-pop">
+    <div className="rounded-md border border-line bg-[#121a1b] px-3 py-2 text-xs shadow-pop">
       <p className="mb-1 font-bold">{label}</p>
       {payload.map((p) => (
         <p key={p.dataKey} className="flex items-center justify-between gap-4">
@@ -41,7 +41,7 @@ export default function RevenueExpenseChart({ series }) {
             type="button"
             aria-pressed={visible[s.key]}
             onClick={() => toggle(s.key)}
-            className={`inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-[13px] font-semibold focus-ring ${visible[s.key] ? 'border-line bg-white text-ink' : 'border-transparent bg-surface text-ink-muted'}`}
+            className={`inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-[13px] font-semibold focus-ring ${visible[s.key] ? 'border-line bg-[#121a1b] text-ink' : 'border-transparent bg-surface text-ink-muted'}`}
           >
             <span className="h-2.5 w-2.5 rounded-sm" style={{ background: visible[s.key] ? s.color : '#c3cfd1' }} aria-hidden="true" />
             {s.label}

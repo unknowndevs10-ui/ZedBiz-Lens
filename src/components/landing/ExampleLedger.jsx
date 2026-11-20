@@ -15,12 +15,12 @@ export default function ExampleLedger() {
         <p className="mt-3 max-w-xl text-ink-muted">Write what happened. ZedBiz Lens separates it into lines, you check each one, and your dashboard updates.</p>
 
         <div className="mt-10 grid items-stretch gap-4 lg:grid-cols-[1fr_auto_1fr]">
-          <div className="rounded-lg border border-line bg-white p-5 shadow-card">
+          <div className="rounded-lg border border-line bg-[#121a1b] p-5 shadow-card">
             <p className="text-[13px] font-bold text-ink-muted">What you write</p>
             <p className="mt-3 text-[15px] leading-relaxed">“Bought stock for K500, sold goods worth K1200 and paid K100 for transport.”</p>
           </div>
           <div className="hidden items-center justify-center lg:flex"><ArrowRight className="h-5 w-5 text-brand" aria-hidden="true" /></div>
-          <div className="rounded-lg border border-line bg-white shadow-card">
+          <div className="rounded-lg border border-line bg-[#121a1b] shadow-card">
             <div className="flex items-center justify-between border-b border-line px-5 py-3">
               <p className="text-[13px] font-bold text-ink-muted">What you review</p>
               <Badge tone="amber">Example</Badge>

@@ -74,8 +74,16 @@ function amountFromText(text) {
   return { error: 'Add one clear amount, for example K250, and I will prepare a draft.' };
 }
 
-function categoryFor(text, type) {
-  if (type === 'income') return /hair|braid|weave|plait|styling|client|service/i.test(text) ? 'Services' : 'Sales';
+function categoryFor(text, type, profile = null) {
+  if (type === 'income') {
+    if (/hair|braid|weave|plait|styling|client|service/i.test(text)) return 'Services';
+    const kind = String(profile?.businessType || '').toLowerCase();
+    if (kind.includes('market trader')) return 'Market sales';
+    if (kind.includes('agriculture')) return 'Produce sales';
+    if (kind.includes('food') || kind.includes('hospitality')) return 'Food sales';
+    if (kind.includes('retail')) return 'Shop sales';
+    return 'Sales';
+  }
   const categories = [
     [/rent/i, 'Rent'],
     [/electric|zesco|water|airtime|data bundle|bill|tokens|wifi/i, 'Utilities'],
@@ -87,7 +95,7 @@ function categoryFor(text, type) {
   return categories.find(([pattern]) => pattern.test(text))?.[1] || 'Other expenses';
 }
 
-export function interpretLocally(text) {
+export function interpretLocally(text, businessProfile = null) {
   const source = String(text || '').trim();
   if (source.length < 3) return { kind: 'clarify', message: 'Tell me what happened in the business in a few words.' };
   if (source.length > MAX_INPUT_LENGTH) return { kind: 'clarify', message: `Keep this note under ${MAX_INPUT_LENGTH} characters for the demo.` };
@@ -106,7 +114,7 @@ export function interpretLocally(text) {
     prediction,
     draft: {
       type,
-      category: categoryFor(source, type),
+      category: categoryFor(source, type, businessProfile),
       description: source.length > 80 ? `${source.slice(0, 77)}...` : source,
       amount: parsed.amount,
       date: yesterday ? addDays(todayISO(), -1) : todayISO(),
@@ -116,8 +124,8 @@ export function interpretLocally(text) {
   };
 }
 
-function categoryForService(text, type) {
-  if (type === 'income') return /hair|braid|weave|plait|styling|client|service/i.test(text) ? 'Services' : 'Sales';
+function categoryForService(text, type, businessProfile = null) {
+  if (type === 'income') return categoryFor(text, type, businessProfile);
   const categories = [
     [/rent/i, 'Rent'], [/electric|zesco|water|airtime|data bundle|bill|tokens|wifi/i, 'Utilities'],
     [/wage|salary|assistant|helper|staff/i, 'Wages'], [/levy|market fee|council|ticket/i, 'Market fees'],
@@ -128,8 +136,8 @@ function categoryForService(text, type) {
 }
 
 /** Use the team's FastAPI SVM when configured; otherwise use the offline synthetic baseline. */
-export async function interpretAgentInput(text) {
-  if (!config.agentApiBaseUrl) return interpretLocally(text);
+export async function interpretAgentInput(text, businessProfile = null) {
+  if (!config.agentApiBaseUrl) return interpretLocally(text, businessProfile);
   const response = await fetch(`${config.agentApiBaseUrl}/api/v1/interpret`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -149,7 +157,7 @@ export async function interpretAgentInput(text) {
     prediction: { intent: payload.intent, modelVersion: payload.model_version, source: 'fastapi', confidence: null },
     draft: {
       type,
-      category: categoryForService(source, type),
+      category: categoryForService(source, type, businessProfile),
       description: source.length > 80 ? `${source.slice(0, 77)}...` : source,
       amount: Number(payload.draft.amount),
       date: /\byesterday\b/i.test(source) ? addDays(todayISO(), -1) : todayISO(),

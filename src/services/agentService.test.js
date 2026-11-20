@@ -31,3 +31,11 @@ test('income tax treatment remains unresolved and expense drafts stay pending do
   assert.equal(expense.draft.type, 'expense');
   assert.equal(expense.draft.category, 'Transport');
 });
+
+test('business profile shapes sale categories without changing intent or tax decisions', () => {
+  const marketSale = interpretLocally('I sold tomatoes for K80', { businessType: 'Market trader' });
+  const farmSale = interpretLocally('I sold tomatoes for K80', { businessType: 'Agriculture' });
+  assert.equal(marketSale.draft.category, 'Market sales');
+  assert.equal(farmSale.draft.category, 'Produce sales');
+  assert.equal(marketSale.draft.taxable, 'unsure');
+});

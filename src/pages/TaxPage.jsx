@@ -61,15 +61,15 @@ export default function TaxPage() {
                 action={<Badge tone="amber">Illustrative</Badge>}
               />
               <dl className="grid gap-px bg-line p-px sm:grid-cols-3 mt-4 border-t border-line">
-                <div className="bg-white p-4 sm:p-5">
+                <div className="bg-[#121a1b] p-4 sm:p-5">
                   <dt className="text-[13px] font-semibold text-ink-muted">Turnover, last {data.basis.days} days</dt>
                   <dd className="mt-1.5 text-xl font-extrabold tabular-nums">{formatKwacha(data.turnover.period)}</dd>
                 </div>
-                <div className="bg-white p-4 sm:p-5">
+                <div className="bg-[#121a1b] p-4 sm:p-5">
                   <dt className="text-[13px] font-semibold text-ink-muted">Projected annual turnover</dt>
                   <dd className="mt-1.5 text-xl font-extrabold tabular-nums">{formatKwacha(data.turnover.annualised)}</dd>
                 </div>
-                <div className="bg-white p-4 sm:p-5">
+                <div className="bg-[#121a1b] p-4 sm:p-5">
                   <dt className="text-[13px] font-semibold text-ink-muted">Annualised turnover-tax scenarios</dt>
                   <dd className="mt-1.5 text-sm font-bold tabular-nums">
                     {data.turnoverEstimate.excessOnly == null

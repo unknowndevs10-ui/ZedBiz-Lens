@@ -17,7 +17,7 @@ export default function Footer({ compact = false }) {
     );
   }
   return (
-    <footer className="border-t border-line bg-white">
+    <footer className="border-t border-line bg-[#121a1b]">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-12">
         <div className="md:col-span-5">
           <Logo />

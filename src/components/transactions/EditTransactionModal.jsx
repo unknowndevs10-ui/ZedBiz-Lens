@@ -91,7 +91,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave }) {
                 role="radio"
                 aria-checked={form.type === value}
                 onClick={() => changeType(value)}
-                className={`h-9 rounded text-sm font-semibold focus-ring ${form.type === value ? 'bg-white text-brand-700 shadow-card' : 'text-ink-muted'}`}
+                className={`h-9 rounded text-sm font-semibold focus-ring ${form.type === value ? 'bg-[#121a1b] text-brand-700 shadow-card' : 'text-ink-muted'}`}
               >
                 {label}
               </button>

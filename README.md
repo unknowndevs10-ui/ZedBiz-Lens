@@ -12,7 +12,7 @@ Requires Node.js 18 or newer.
 
 ### Quick preview from the downloaded ZIP (Windows)
 
-The ZIP includes the built demo. Extract it, then double-click `START-DEMO.bat`. Python 3 is required for this one-click preview; it uses only Python's standard library and opens the demo in your browser. Keep the launcher window open while using the app, and press Ctrl+C in that window to stop it. If a port from 8000 to 8009 is busy, the launcher automatically tries the next one.
+The ZIP includes the built demo. Extract it, then double-click `START-DEMO.bat`. Python 3 is required for this one-click preview; it uses only Python's standard library and opens the dashboard directly in your browser. Keep the launcher window open while using the app, and press Ctrl+C in that window to stop it. If a port from 8000 to 8009 is busy, the launcher automatically tries the next one.
 
 ### Run the source for development
 
@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Open the local Vite URL. Choose **Open demo workspace**. The synthetic workspace stores changes in this browser and does not require an account or API key.
+Open the local Vite URL. The dashboard and demo workspace routes open directly; there is no access gate. Synthetic records store in this browser and do not require an account or API key.
 
 ```powershell
 npm test
@@ -34,12 +34,13 @@ The test suite checks the local intent baseline. The calculator tests are in `ag
 ## What the prototype does
 
 - **Record keeping:** generate 120 days of deterministic synthetic activity for a mini-mart, hair studio and market stall. Add a note; review, edit, confirm or reject the resulting draft.
+- **Business profile:** create a local profile for a real business and start with an empty ledger; synthetic sample businesses stay separate. The profile captures business name/type, broad location, preferred language, and cash/mobile-money/credit channels.
 - **AI Agent Lab:** a small synthetic intent classifier recognizes sale, expense, summary or unsupported requests. It can prepare a sale/expense draft or call the confirmed-record summary tool. A possible duplicate is held for review.
 - **Voice:** browser speech recognition and speech synthesis are optional. Voice recognition is English-only in this demo and may use the browser's speech service. Typing works without it.
 - **Dashboard:** totals, trend charts, expense breakdown, performance comparison and recent records update from confirmed entries.
 - **Tax readiness:** the app shows two turnover-tax scenarios and VAT threshold progress. It does not select a tax base, calculate income-tax liability or calculate VAT payable.
 - **Reports:** download synthetic financial and illustrative tax-position PDFs from confirmed records.
-- **Demo session:** a two-hour, browser-tab session makes the public prototype flow coherent. This is not authentication or an authorization boundary.
+- **Dark theme:** a low-glare charcoal workspace keeps the teal and amber brand accents and respects reduced-motion preferences.
 
 ## AI and calculation design
 
@@ -80,9 +81,9 @@ Import this repository as a Vite project with the default build command `npm run
 
 ## Security and privacy in this demo
 
-- Default business data and agent processing stay in the browser. Synthetic entries and edits persist in `localStorage`; demo-session state uses `sessionStorage`.
+- Business profile and user-entered demo records stay in this browser's `localStorage`; sample records remain labeled synthetic.
 - Agent history records the event type and outcome, not the raw note text.
-- The public demo gate is a short-lived navigation convenience only. It does not protect sensitive records. There is no real account system, server authorization, shared database, or multi-user isolation.
+- There is no authentication, server authorization, shared database, or multi-user isolation. All workspace routes are open for challenge judging; use synthetic information only.
 - Do not enter real business, identity, tax or payment information.
 - Security response headers are configured in `vercel.json`. If the optional API is hosted separately, allow only the app origin and avoid wildcard CORS.
 
@@ -91,7 +92,15 @@ Import this repository as a Vite project with the default build command `npm run
 - **Joshua:** frontend layout and interaction design. This app treats his contribution as the presentation layer; the calculator logic is separate.
 - **Dev B:** shared ZRA reference rules and the original trial calculator concept. The scripts now use one shared engine, including annualizing monthly turnover before checking the annual turnover-tax ceiling.
 - **Dev A:** synthetic intent-classifier direction. The compact local classifier is the no-key default; her FastAPI/SVM baseline remains available for separate evaluation.
-- **Head-dev integration:** connects the agent draft flow to the ledger review queue, deterministic dashboard/calculation tools, sample activity trail, demo-session UX, Vercel routing and headers, and validation.
+- **Head-dev integration:** connects the agent draft flow to the ledger review queue, deterministic dashboard/calculation tools, sample activity trail, dark workspace UX, Vercel routing and headers, and validation.
+
+## Recommended next enhancements
+
+1. **Local-language experience:** co-design consented Bemba, Nyanja, and other phrase sets with traders; show the recognized transcript and let the user correct it before any draft is created.
+2. **Receipt capture:** add OCR that highlights extracted fields and asks the owner to confirm uncertain values; never infer tax treatment from an image alone.
+3. **Connectivity resilience:** queue signed, duplicate-safe SMS/USSD events and sync them when data service returns, using a Zamtel sandbox before any live integration.
+4. **Tax rules governance:** have Finance approve versioned rules and worked examples, then lock them with regression tests before showing payable amounts.
+5. **Production security:** add real identity, server-side authorization, encrypted tenant-isolated storage, audit history, and retention controls before accepting real business records.
 
 ## Not production-ready yet
 

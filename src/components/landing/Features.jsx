@@ -9,7 +9,7 @@ const FEATURES = [
 
 export default function Features() {
   return (
-    <section id="features" className="scroll-mt-28 border-b border-line bg-white">
+    <section id="features" className="scroll-mt-28 border-b border-line bg-[#121a1b]">
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
         <h2 className="max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">What you get</h2>
         <div className="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">

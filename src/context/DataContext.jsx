@@ -4,6 +4,7 @@ import { clearAgentEvents } from '../services/agentLog';
 
 const DataContext = createContext(null);
 const BUSINESS_KEY = 'zedbiz-lens:active-business';
+const PROFILE_KEY = 'zedbiz-lens:business-profile:v1';
 
 function readStoredBusiness() {
   try {
@@ -13,13 +14,27 @@ function readStoredBusiness() {
   }
 }
 
+function readStoredProfile() {
+  try {
+    const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    return profile && typeof profile === 'object' ? profile : null;
+  } catch {
+    return null;
+  }
+}
+
+function readInitialBusiness() {
+  return readStoredBusiness() || (readStoredProfile() ? 'my-business' : 'retail');
+}
+
 /**
  * Holds the active business and its transactions. `version` increases whenever a
  * confirmed figure could have changed, so dashboards and tax views refetch.
  */
 export function DataProvider({ children }) {
   const [businesses, setBusinesses] = useState([]);
-  const [businessId, setBusinessIdState] = useState(() => readStoredBusiness() || 'retail');
+  const [businessId, setBusinessIdState] = useState(readInitialBusiness);
+  const [businessProfile, setBusinessProfileState] = useState(readStoredProfile);
   const [transactions, setTransactions] = useState([]);
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [error, setError] = useState(null);
@@ -59,6 +74,22 @@ export function DataProvider({ children }) {
     }
     setBusinessIdState(id);
   }, []);
+
+  const saveBusinessProfile = useCallback((profile) => {
+    const clean = {
+      id: 'my-business',
+      businessName: String(profile.businessName || '').trim().slice(0, 80),
+      businessType: String(profile.businessType || 'other').slice(0, 40),
+      location: String(profile.location || '').trim().slice(0, 80),
+      language: String(profile.language || 'English').slice(0, 24),
+      recordChannels: Array.isArray(profile.recordChannels) ? profile.recordChannels.filter((channel) => ['cash', 'mobile_money', 'credit'].includes(channel)) : ['cash'],
+      updatedAt: new Date().toISOString(),
+    };
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(clean)); } catch { /* profile remains available in memory */ }
+    setBusinessProfileState(clean);
+    setBusinessId('my-business');
+    return clean;
+  }, [setBusinessId]);
 
   const bump = useCallback(() => setVersion((v) => v + 1), []);
   const replaceOne = useCallback((tx) => setTransactions((list) => list.map((t) => (t.id === tx.id ? tx : t))), []);
@@ -140,8 +171,10 @@ export function DataProvider({ children }) {
     return {
       businesses,
       business: businesses.find((b) => b.id === businessId) || null,
+      businessProfile,
       businessId,
       setBusinessId,
+      saveBusinessProfile,
       transactions,
       pendingCount,
       status,
@@ -157,7 +190,7 @@ export function DataProvider({ children }) {
       rejectMany,
       resetDemoData,
     };
-  }, [businesses, businessId, setBusinessId, transactions, status, error, version, load, submitEntry, submitAgentDraft, updateTransaction, confirmTransaction, rejectTransaction, confirmMany, rejectMany, resetDemoData]);
+  }, [businesses, businessId, setBusinessId, businessProfile, saveBusinessProfile, transactions, status, error, version, load, submitEntry, submitAgentDraft, updateTransaction, confirmTransaction, rejectTransaction, confirmMany, rejectMany, resetDemoData]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

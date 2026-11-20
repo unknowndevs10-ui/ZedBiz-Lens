@@ -1,6 +1,6 @@
 export default function Card({ as: Tag = 'div', className = '', children, ...rest }) {
   return (
-    <Tag className={`rounded-lg border border-line bg-white shadow-card ${className}`} {...rest}>
+    <Tag className={`rounded-lg border border-line bg-[#121a1b] shadow-card ${className}`} {...rest}>
       {children}
     </Tag>
   );

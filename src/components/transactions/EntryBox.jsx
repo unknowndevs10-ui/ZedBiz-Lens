@@ -74,7 +74,7 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
               setText(ex.text);
               setError('');
             }}
-            className="rounded-md border border-line bg-white px-2.5 py-1 text-[13px] font-semibold text-brand-700 hover:bg-brand-50 focus-ring disabled:opacity-50"
+            className="rounded-md border border-line bg-[#121a1b] px-2.5 py-1 text-[13px] font-semibold text-brand-700 hover:bg-brand-50 focus-ring disabled:opacity-50"
           >
             {ex.label}
           </button>

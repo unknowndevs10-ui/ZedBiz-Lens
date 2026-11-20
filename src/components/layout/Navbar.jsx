@@ -12,7 +12,7 @@ const LINKS = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-8 z-40 border-b border-line bg-white/95 backdrop-blur">
+    <header className="sticky top-8 z-40 border-b border-line bg-[#0e1516]/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
         <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
@@ -28,7 +28,7 @@ export default function Navbar() {
         </button>
       </div>
       {open && (
-        <nav id="mobile-menu" aria-label="Primary mobile" className="border-t border-line bg-white px-4 pb-4 pt-2 md:hidden">
+        <nav id="mobile-menu" aria-label="Primary mobile" className="border-t border-line bg-[#121a1b] px-4 pb-4 pt-2 md:hidden">
           {LINKS.map((l) => (
             <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-md px-3 py-3 text-[15px] font-semibold text-ink hover:bg-surface">
               {l.label}

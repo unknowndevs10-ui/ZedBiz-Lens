@@ -105,7 +105,7 @@ export default function TransactionsPage() {
               <div className="flex flex-wrap items-center gap-3 px-4 pb-4 pt-4 sm:px-5">
                 <div role="tablist" aria-label="Filter by status" className="inline-flex rounded-md border border-line bg-surface p-0.5">
                   {TABS.map((t) => (
-                    <button key={t.id} role="tab" aria-selected={tab === t.id} type="button" onClick={() => { setTab(t.id); setLimit(PAGE_SIZE); }} className={`h-8 rounded px-2.5 text-[13px] font-semibold focus-ring ${tab === t.id ? 'bg-white text-brand-700 shadow-card' : 'text-ink-muted'}`}>
+                    <button key={t.id} role="tab" aria-selected={tab === t.id} type="button" onClick={() => { setTab(t.id); setLimit(PAGE_SIZE); }} className={`h-8 rounded px-2.5 text-[13px] font-semibold focus-ring ${tab === t.id ? 'bg-[#121a1b] text-brand-700 shadow-card' : 'text-ink-muted'}`}>
                       {t.label} <span className="text-ink-muted">{counts[t.id]}</span>
                     </button>
                   ))}

@@ -39,7 +39,7 @@ def main():
     if server is None:
         raise SystemExit("Ports 8000-8009 are busy. Close another local server and try again.")
 
-    url = f"http://127.0.0.1:{server.server_port}/"
+    url = f"http://127.0.0.1:{server.server_port}/app/dashboard"
     print(f"ZedBiz Lens is running at {url}")
     print("Keep this window open while using the demo. Press Ctrl+C to stop it.")
     threading.Timer(1.0, webbrowser.open, args=(url,)).start()

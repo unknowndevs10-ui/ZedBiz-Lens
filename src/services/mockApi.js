@@ -8,6 +8,7 @@ import { buildDashboard, buildTaxPosition } from '../utils/finance';
 import { buildFinancialReportPdf, buildTaxReportPdf } from '../utils/reportPdf';
 
 const STORAGE_KEY = 'zedbiz-lens:demo-data:v1';
+const PROFILE_KEY = 'zedbiz-lens:business-profile:v1';
 const wait = (ms = config.mockLatencyMs) => new Promise((resolve) => setTimeout(resolve, ms));
 let cache = null;
 
@@ -50,7 +51,17 @@ function load() {
 const findIndex = (state, id) => state.transactions.findIndex((tx) => tx.id === id);
 const forBusiness = (state, businessId) => state.transactions.filter((tx) => tx.businessId === businessId);
 const confirmedFor = (state, businessId) => forBusiness(state, businessId).filter((tx) => tx.status === 'confirmed');
-const businessById = (id) => BUSINESSES.find((b) => b.id === id) || BUSINESSES[0];
+function customBusiness() {
+  try {
+    const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    if (profile?.id === 'my-business' && profile.businessName) {
+      return { id: profile.id, name: profile.businessName, kind: profile.businessType, location: profile.location || 'Zambia', profile: true };
+    }
+  } catch { /* the demo still works if storage is unavailable */ }
+  return null;
+}
+
+const businessById = (id) => [customBusiness(), ...BUSINESSES].filter(Boolean).find((business) => business.id === id) || BUSINESSES[0];
 
 function validatePatch(patch = {}) {
   if (patch.amount !== undefined && !(Number(patch.amount) > 0)) throw new Error('Amount must be greater than zero.');
@@ -73,7 +84,7 @@ function applyChange(id, change) {
 export const mockApi = {
   async listBusinesses() {
     await wait(120);
-    return BUSINESSES;
+    return [...BUSINESSES, customBusiness()].filter(Boolean);
   },
 
   async getTransactions({ businessId }) {

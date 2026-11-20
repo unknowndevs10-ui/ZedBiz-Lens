@@ -23,7 +23,7 @@ export default function AudienceSection() {
           {businesses.map((b) => {
             const Icon = ICONS[b.id] || Store;
             return (
-              <div key={b.id} className="flex flex-col rounded-lg border border-line bg-white p-5 shadow-card">
+              <div key={b.id} className="flex flex-col rounded-lg border border-line bg-[#121a1b] p-5 shadow-card">
                 <Icon className="h-5 w-5 text-brand" aria-hidden="true" />
                 <h3 className="mt-3 text-[15px] font-bold">{b.kind}</h3>
                 <p className="text-[13px] font-semibold text-ink-muted">{b.name} · {b.location}</p>
