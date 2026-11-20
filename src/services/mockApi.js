@@ -55,7 +55,7 @@ function customBusiness() {
   try {
     const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
     if (profile?.id === 'my-business' && profile.businessName) {
-      return { id: profile.id, name: profile.businessName, kind: profile.businessType, location: profile.location || 'Zambia', profile: true };
+      return { id: profile.id, name: profile.businessName, kind: profile.businessType, location: profile.district || profile.province || profile.location || 'Zambia', profile: true };
     }
   } catch { /* the demo still works if storage is unavailable */ }
   return null;

@@ -1,6 +1,6 @@
 # ZedBiz Lens
 
-**UNKNOWNDEVs · Zamtel × ZRA Innovation Challenge · Intelligent Customer and Business Ecosystem**
+**UnknownDevs · Zamtel × ZRA Innovation Challenge · Intelligent Customer and Business Ecosystem**
 
 ZedBiz Lens is a synthetic-data prototype for small and informal businesses in Zambia. It brings everyday records, clear business summaries and tax-readiness indicators into one calm workspace. The AI layer helps turn short notes into reviewable drafts and routes supported requests to deterministic business tools.
 
@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Open the local Vite URL. The dashboard and demo workspace routes open directly; there is no access gate. Synthetic records store in this browser and do not require an account or API key.
+Open the local Vite URL. Dashboard routes open directly; the team login is not connected yet, so this build is still a public synthetic prototype. Do not enter real business or personal details until Supabase access control is configured.
 
 ```powershell
 npm test
@@ -34,13 +34,17 @@ The test suite checks the local intent baseline. The calculator tests are in `ag
 ## What the prototype does
 
 - **Record keeping:** generate 120 days of deterministic synthetic activity for a mini-mart, hair studio and market stall. Add a note; review, edit, confirm or reject the resulting draft.
-- **Business profile:** create a local profile for a real business and start with an empty ledger; synthetic sample businesses stay separate. The profile captures business name/type, broad location, preferred language, and cash/mobile-money/credit channels.
+- **Business profile:** a five-step setup asks how to address the user, their role, business type and registration journey, province/market, preferred language, and cash/mobile-money/credit methods. Informal businesses get a formalisation-interest question; registered businesses get self-reported PACRA/TPIN/VAT readiness questions without collecting ID numbers. It creates a clean empty ledger separate from synthetic samples.
 - **AI Agent Lab:** a small synthetic intent classifier recognizes sale, expense, summary or unsupported requests. It can prepare a sale/expense draft or call the confirmed-record summary tool. A possible duplicate is held for review.
 - **Voice:** browser speech recognition and speech synthesis are optional. Voice recognition is English-only in this demo and may use the browser's speech service. Typing works without it.
 - **Dashboard:** totals, trend charts, expense breakdown, performance comparison and recent records update from confirmed entries.
 - **Tax readiness:** the app shows two turnover-tax scenarios and VAT threshold progress. It does not select a tax base, calculate income-tax liability or calculate VAT payable.
 - **Reports:** download synthetic financial and illustrative tax-position PDFs from confirmed records.
 - **Dark theme:** a low-glare charcoal workspace keeps the teal and amber brand accents and respects reduced-motion preferences.
+
+## Team access setup still required
+
+The signup and login screen is intentionally not simulated. Once the Supabase project is supplied, connect invite-only email/password auth, restrict invitations to the six approved team addresses in the Supabase project, enforce authorization at the auth/database layer, and route a successful signup into the five-step profile setup. Until then, this is an open local prototype. Never commit credentials or a plaintext password handoff file to the repository or ZIP.
 
 ## AI and calculation design
 

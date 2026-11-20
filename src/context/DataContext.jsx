@@ -78,11 +78,20 @@ export function DataProvider({ children }) {
   const saveBusinessProfile = useCallback((profile) => {
     const clean = {
       id: 'my-business',
+      displayName: String(profile.displayName || '').trim().slice(0, 50),
+      role: String(profile.role || 'Owner').slice(0, 24),
       businessName: String(profile.businessName || '').trim().slice(0, 80),
       businessType: String(profile.businessType || 'other').slice(0, 40),
-      location: String(profile.location || '').trim().slice(0, 80),
+      businessFormality: ['informal', 'formalizing', 'registered'].includes(profile.businessFormality) ? profile.businessFormality : 'informal',
+      province: String(profile.province || '').slice(0, 32),
+      district: String(profile.district || '').trim().slice(0, 80),
+      location: String(profile.district || profile.province || profile.location || '').trim().slice(0, 80),
       language: String(profile.language || 'English').slice(0, 24),
       recordChannels: Array.isArray(profile.recordChannels) ? profile.recordChannels.filter((channel) => ['cash', 'mobile_money', 'credit'].includes(channel)) : ['cash'],
+      pacraStatus: profile.pacraStatus || 'unsure',
+      zraStatus: profile.zraStatus || 'unsure',
+      vatStatus: profile.vatStatus || 'unsure',
+      formalizationInterest: profile.formalizationInterest || 'unsure',
       updatedAt: new Date().toISOString(),
     };
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(clean)); } catch { /* profile remains available in memory */ }
