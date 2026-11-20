@@ -89,7 +89,7 @@ export default function TaxPage() {
 
           <section className="mt-8" aria-labelledby="regimes-heading">
             <h2 id="regimes-heading" className="text-[15px] font-bold">Tax scenarios and limits</h2>
-            <p className="mb-3 mt-0.5 text-[13px] text-ink-muted">The turnover-tax card shows two alternative bases. Income-tax and VAT liabilities are left uncalculated where required details are missing.</p>
+            <p className="mb-3 mt-0.5 max-w-4xl text-[13px] leading-6 text-ink-muted">The turnover-tax card shows two alternative bases. Income tax needs the business's legal form, allowable deductions, and applicable tax schedule; net profit alone is not enough to determine taxable profit. VAT payable needs each supply's VAT category plus output VAT and allowable input VAT. This demo only shows a turnover-threshold indicator, so those liabilities remain uncalculated.</p>
             <RegimeComparison regimes={data.regimes} lowestId={data.lowestRegimeId} />
           </section>
 

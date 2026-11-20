@@ -20,7 +20,7 @@ export const TAX_DEMO = {
   taxYear: ZRA_TAX_RULES.meta.tax_year,
   sourceUrl: 'https://www.zra.org.zm/tax-information/',
   disclaimer:
-    'Illustrative tax-readiness view using the linked ZRA reference rules. It is not a tax assessment or filing calculation. The turnover-tax base and business eligibility need Finance review; VAT payable is not calculated.',
+    'Illustrative tax-readiness view using the linked ZRA reference rules. It is not a tax assessment or filing calculation. The turnover-tax base and business eligibility need Finance review. Income-tax liability and VAT payable are not calculated because the demo lacks reviewed tax profiles, supply classifications, and allowable input-tax records.',
   changes: [
     {
       id: 'threshold',

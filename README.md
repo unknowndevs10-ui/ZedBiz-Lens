@@ -10,6 +10,12 @@ ZedBiz Lens is a synthetic-data prototype for small and informal businesses in Z
 
 Requires Node.js 18 or newer.
 
+### Quick preview from the downloaded ZIP (Windows)
+
+The ZIP includes the built demo. Extract it, then double-click `START-DEMO.bat`. Python 3 is required for this one-click preview; it uses only Python's standard library and opens the demo in your browser. Keep the launcher window open while using the app, and press Ctrl+C in that window to stop it. If a port from 8000 to 8009 is busy, the launcher automatically tries the next one.
+
+### Run the source for development
+
 ```powershell
 npm install
 npm run dev
