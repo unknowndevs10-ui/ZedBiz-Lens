@@ -7,8 +7,10 @@ from typing import Literal
 
 import joblib
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sklearn.metrics.pairwise import cosine_similarity
+from calculations import calculate_financial_summary
 
 ROOT = Path(__file__).resolve().parent
 MODEL_PATH = ROOT / "artifacts" / "intent_pipeline.joblib"
@@ -19,9 +21,28 @@ METADATA: dict = {}
 app = FastAPI(title="ZedBiz Lens NLU", version="0.1.0")
 
 
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def home() -> str:
+    return """<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
+    <title>ZedBiz NLU service</title><body style='font:16px Segoe UI,Arial,sans-serif;max-width:680px;margin:12vh auto;padding:24px;color:#1E2A2F;background:#F2F6F6'>
+    <h1 style='color:#1F6F6B'>ZedBiz NLU service is running</h1><p>This is the local AI API, not the Agent Lab interface.</p>
+    <p><a href='http://127.0.0.1:4177' style='color:#1F6F6B'>Open the Agent Lab</a></p>
+    <p><a href='/docs' style='color:#1F6F6B'>View API documentation</a></p></body></html>"""
+
+
 class InterpretRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
     language: str = Field(default="en", max_length=12)
+
+
+class FinancialCalculationRequest(BaseModel):
+    revenue: float = Field(ge=0, le=1_000_000_000_000, allow_inf_nan=False)
+    cost_of_goods_sold: float = Field(ge=0, le=1_000_000_000_000, allow_inf_nan=False)
+    operating_expenses: float = Field(ge=0, le=1_000_000_000_000, allow_inf_nan=False)
+    turnover: float = Field(ge=0, le=1_000_000_000_000, allow_inf_nan=False)
+    period: Literal["monthly", "annual"]
+    fixed_costs: float | None = Field(default=None, ge=0, le=1_000_000_000_000, allow_inf_nan=False)
+    variable_costs: float | None = Field(default=None, ge=0, le=1_000_000_000_000, allow_inf_nan=False)
 
 
 class TransactionDraft(BaseModel):
@@ -75,6 +96,20 @@ def health() -> dict:
         "training_data_status": METADATA.get("training_data", "not_available"),
         "validated_for_real_business_use": METADATA.get("validated_for_real_business_use", False),
     }
+
+
+@app.post("/api/v1/calculations/financial-summary")
+def financial_summary(request: FinancialCalculationRequest) -> dict:
+    """Deterministic finance summary plus clearly labelled tax demo scenarios."""
+    return calculate_financial_summary(
+        revenue=request.revenue,
+        cost_of_goods_sold=request.cost_of_goods_sold,
+        operating_expenses=request.operating_expenses,
+        turnover=request.turnover,
+        period=request.period,
+        fixed_costs=request.fixed_costs,
+        variable_costs=request.variable_costs,
+    )
 
 
 @app.post("/api/v1/interpret", response_model=InterpretResponse)
