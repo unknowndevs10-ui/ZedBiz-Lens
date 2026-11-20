@@ -26,7 +26,7 @@ function readStoredProfile(userId) {
 }
 
 function readInitialBusiness(userId) {
-  return readStoredBusiness(userId) || (readStoredProfile(userId) ? 'my-business' : 'retail');
+  return readStoredBusiness(userId) || 'my-business';
 }
 
 /**
@@ -53,7 +53,7 @@ export function DataProvider({ children }) {
       try { localStorage.setItem(scopedKey(PROFILE_KEY, userId), JSON.stringify(cloudProfile)); } catch { /* profile remains in memory */ }
     }
     setBusinessProfileState(profile);
-    setBusinessIdState(readStoredBusiness(userId) || (profile ? 'my-business' : 'retail'));
+    setBusinessIdState(readStoredBusiness(userId) || 'my-business');
   }, [userId, cloudProfile]);
 
   const load = useCallback(async () => {
@@ -107,6 +107,9 @@ export function DataProvider({ children }) {
       zraStatus: profile.zraStatus || 'unsure',
       vatStatus: profile.vatStatus || 'unsure',
       formalizationInterest: profile.formalizationInterest || 'unsure',
+      goals: Array.isArray(profile.goals) ? profile.goals.filter((goal) => ['records', 'profit', 'cashflow', 'tax_ready', 'growth'].includes(goal)) : ['records', 'profit'],
+      biggestChallenge: ['keeping_records', 'pricing', 'stock', 'cashflow', 'customer_credit', 'tax', 'growth'].includes(profile.biggestChallenge) ? profile.biggestChallenge : 'keeping_records',
+      operatingDaysPerWeek: String(Math.min(7, Math.max(1, Number(profile.operatingDaysPerWeek) || 6))),
       updatedAt: new Date().toISOString(),
     };
     try { localStorage.setItem(scopedKey(PROFILE_KEY, userId), JSON.stringify(clean)); } catch { /* profile remains available in memory */ }
