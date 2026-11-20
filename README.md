@@ -3,7 +3,7 @@
 Business financial management for small businesses and informal traders in Zambia.
 React + Vite + Tailwind CSS, with Lucide icons and Recharts. The app runs **entirely on mock data** until the FastAPI backend is connected.
 
-> **DEMO MODE** – all business data is synthetic. Tax figures are illustrative placeholders pending Finance team approval. Nothing here is an official Zambian tax rate, tax advice or a compliance check.
+> **DEMO MODE** – business data is synthetic. The tax-readiness screen uses reference assumptions in `tax_rules.json`; turnover-tax bases and business eligibility still need Finance review. It is not a tax assessment, filing calculation or compliance check.
 
 ## Run it
 
@@ -74,7 +74,7 @@ In demo mode the PDFs come from a tiny built-in writer (`src/utils/simplePdf.js`
 
 - **Extraction** (`src/utils/mockExtraction.js`): a keyword and regex rule set, not an AI model. The UI labels it "Simulated extraction". Confidence values are a demo heuristic.
 - **Dashboard figures**: calculated in `src/utils/finance.js` from confirmed transactions. Gross profit = sales minus "Stock purchases". In live mode the backend owns these numbers.
-- **Tax figures**: all rates and the VAT threshold are placeholders in `src/data/taxDemo.js`. Replace with Finance-approved values or backend data.
+- **Tax readiness**: the demo reads the shared reference values from root `tax_rules.json`. It shows two turnover-tax interpretations, annualises the last 90 days of confirmed sales, and leaves income-tax liability and VAT payable uncalculated. Finance must confirm eligibility and the turnover-tax base.
 - **Synthetic history**: 120 days of data per demo business, generated in `src/data/mockData.js` and slid forward so it always ends today.
 
 ## Taxable / not taxable labels
