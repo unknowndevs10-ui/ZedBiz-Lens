@@ -118,7 +118,7 @@ export function buildDashboard(confirmed, periodId) {
   };
 }
 
-/** Illustrative tax view built from TAX_DEMO placeholder assumptions. Not official. */
+/** Illustrative tax-readiness view. No final tax decision is made here. */
 export function buildTaxPosition(confirmed) {
   const end = todayISO();
   const start = addDays(end, -(TAX_DEMO.basisDays - 1));
@@ -127,81 +127,94 @@ export function buildTaxPosition(confirmed) {
   const basis = inWindow.filter((tx) => !(tx.type === 'income' && tx.taxable === 'not_taxable'));
   const unsureCount = basis.filter((tx) => tx.type === 'income' && tx.taxable === 'unsure').length;
   const s = summarize(basis);
-  const factor = 365 / TAX_DEMO.basisDays;
-  const annualTurnover = s.sales * factor;
-  const annualNet = Math.max(0, s.netProfit) * factor;
-  const annualGross = Math.max(0, s.grossProfit) * factor;
-  const [low, high] = TAX_DEMO.turnoverBand;
-  const percent = (annualTurnover / TAX_DEMO.vatThreshold) * 100;
-  const vatStatus = percent >= 100 ? 'above' : percent >= 75 ? 'approaching' : 'below';
+  const annualTurnover = s.sales * (365 / TAX_DEMO.basisDays);
+  const { annualCeiling, annualNilBand, rate, modes } = TAX_DEMO.turnoverTax;
+  const { annualThreshold: vatThreshold, watchPointPercent } = TAX_DEMO.vat;
+  const percent = vatThreshold > 0 ? (annualTurnover / vatThreshold) * 100 : 0;
+  const vatStatus = percent >= 100 ? 'above' : percent >= watchPointPercent ? 'approaching' : 'below';
+  const aboveTurnoverCeiling = annualTurnover > annualCeiling;
+  const turnoverTaxOptions = aboveTurnoverCeiling
+    ? null
+    : {
+        excess_only: round2(Math.max(0, annualTurnover - annualNilBand) * rate),
+        total_turnover: round2(annualTurnover > annualNilBand ? annualTurnover * rate : 0),
+      };
 
   const regimes = [
     {
       id: 'turnover',
-      name: 'Turnover-based',
-      basis: 'Share of turnover',
-      rateLabel: `${low * 100}% to ${high * 100}% (placeholder)`,
-      annualLow: round2(annualTurnover * low),
-      annualHigh: round2(annualTurnover * high),
-      applicable: true,
-      note: 'Simple to track: it only needs sales records.',
+      name: 'Turnover tax',
+      basis: 'Gross sales / turnover',
+      rateLabel: `${rate * 100}% reference rate`,
+      estimateTitle: 'Alternative annual scenarios',
+      scenarios: turnoverTaxOptions && modes.map((mode) => ({
+        label: mode === 'excess_only' ? 'Above nil band' : 'Full turnover after nil band',
+        amount: turnoverTaxOptions[mode],
+      })),
+      note: aboveTurnoverCeiling
+        ? 'Projected turnover exceeds the reference ceiling. Eligibility and transition timing need review; no amount is estimated.'
+        : 'Both tax-base interpretations are shown. Finance must confirm the applicable method; neither is selected as final.',
     },
     {
-      id: 'profit',
-      name: 'Profit-based',
-      basis: 'Share of net profit',
-      rateLabel: `${TAX_DEMO.profitRate * 100}% (placeholder)`,
-      annualLow: round2(annualNet * TAX_DEMO.profitRate),
-      annualHigh: round2(annualNet * TAX_DEMO.profitRate),
-      applicable: true,
-      note: 'Needs complete expense records to be meaningful.',
+      id: 'income',
+      name: 'Income tax',
+      basis: 'Taxable profit after allowable deductions',
+      rateLabel: 'Not calculated',
+      estimateTitle: 'Estimate',
+      scenarios: null,
+      note: 'Requires legal form, activity, allowable deductions, and the applicable income-tax schedule. No liability is inferred from net profit.',
     },
     {
       id: 'vat',
-      name: 'VAT-registered',
-      basis: 'Share of value added (sales less stock)',
-      rateLabel: `${TAX_DEMO.vatRate * 100}% (placeholder)`,
-      annualLow: round2(annualGross * TAX_DEMO.vatRate),
-      annualHigh: round2(annualGross * TAX_DEMO.vatRate),
-      applicable: vatStatus !== 'below',
-      note: vatStatus === 'below' ? 'Not shown as applicable while below the illustrative threshold.' : 'Illustrative net amount after stock costs.',
+      name: 'VAT',
+      basis: 'Output VAT less allowable input VAT',
+      rateLabel: `${TAX_DEMO.vat.standardRate * 100}% standard-rate reference`,
+      estimateTitle: 'VAT payable',
+      scenarios: null,
+      note: 'Not calculated. Supply classification, output VAT, and allowable input VAT are required. This page only shows a turnover threshold indicator.',
     },
   ];
-  const comparable = regimes.filter((r) => r.applicable);
-  const mid = (r) => (r.annualLow + r.annualHigh) / 2;
-  const lowest = comparable.length > 1 ? comparable.reduce((a, b) => (mid(b) < mid(a) ? b : a)).id : null;
 
   const notifications = [];
   if (!basis.length) {
-    notifications.push({ id: 'no-data', tone: 'warning', title: 'No confirmed entries in the last 90 days', body: 'Confirm some entries to see an illustrative estimate.' });
+    notifications.push({ id: 'no-data', tone: 'warning', title: 'No confirmed entries in the last 90 days', body: 'Confirm entries to see an illustrative turnover-readiness view.' });
   } else {
-    notifications.push({ id: 'records', tone: 'success', title: `${basis.length} confirmed entries support this view`, body: 'Estimates are rebuilt each time you confirm or edit an entry.' });
+    notifications.push({ id: 'records', tone: 'success', title: `${basis.length} confirmed entries support this view`, body: 'The indicator is rebuilt when you confirm or edit an entry.' });
   }
   if (vatStatus === 'below') {
-    notifications.push({ id: 'vat', tone: 'info', title: 'Below the illustrative VAT threshold', body: `At the current pace, annual turnover is about ${Math.round(percent)}% of the placeholder threshold.` });
+    notifications.push({ id: 'vat', tone: 'info', title: 'Below the VAT threshold marker', body: `Annualised turnover is about ${Math.round(percent)}% of the reference threshold. This is an indicator, not an eligibility decision.` });
   } else {
-    notifications.push({ id: 'vat', tone: 'warning', title: vatStatus === 'above' ? 'Above the illustrative VAT threshold' : 'Approaching the illustrative VAT threshold', body: `At the current pace, annual turnover is about ${Math.round(percent)}% of the placeholder threshold.` });
+    notifications.push({ id: 'vat', tone: 'warning', title: vatStatus === 'above' ? 'At or above the VAT threshold marker' : 'Approaching the VAT threshold marker', body: `Annualised turnover is about ${Math.round(percent)}% of the reference threshold. Confirm taxable supplies and registration rules with Finance.` });
   }
   if (unsureCount) {
     notifications.push({ id: 'unsure', tone: 'warning', title: `${unsureCount} income ${unsureCount === 1 ? 'entry needs' : 'entries need'} a tax label`, body: 'These are counted in turnover for now. Edit each one in Transactions to mark it taxable or not taxable.' });
   }
-  notifications.push({ id: 'pending-approval', tone: 'info', title: 'Rates are placeholders', body: 'Official rates and thresholds are pending Finance team approval.' });
+  notifications.push({ id: 'pending-base', tone: 'info', title: 'Turnover-tax base needs confirmation', body: 'The demo shows both excess-only and full-turnover scenarios. Finance must confirm the applicable calculation before integration.' });
+  if (aboveTurnoverCeiling) {
+    notifications.push({ id: 'turnover-ceiling', tone: 'warning', title: 'Projected turnover is above the reference ceiling', body: 'No turnover-tax amount is shown. Review business activity and transition timing with Finance and ZRA.' });
+  }
 
   return {
     basis: { start, end, days: TAX_DEMO.basisDays, transactionCount: basis.length },
     turnover: { period: round2(s.sales), annualised: round2(annualTurnover) },
-    turnoverEstimate: { low: round2(s.sales * low), high: round2(s.sales * high) },
+    turnoverEstimate: {
+      excessOnly: turnoverTaxOptions?.excess_only ?? null,
+      totalTurnover: turnoverTaxOptions?.total_turnover ?? null,
+      aboveCeiling: aboveTurnoverCeiling,
+    },
     vat: {
-      threshold: TAX_DEMO.vatThreshold,
+      threshold: vatThreshold,
       annualisedTurnover: round2(annualTurnover),
       percent,
-      remaining: round2(Math.max(0, TAX_DEMO.vatThreshold - annualTurnover)),
+      remaining: round2(Math.max(0, vatThreshold - annualTurnover)),
       status: vatStatus,
+      watchPointPercent,
     },
     regimes,
-    lowestRegimeId: lowest,
+    lowestRegimeId: null,
     notifications,
     changes: TAX_DEMO.changes,
     disclaimer: TAX_DEMO.disclaimer,
   };
 }
+
