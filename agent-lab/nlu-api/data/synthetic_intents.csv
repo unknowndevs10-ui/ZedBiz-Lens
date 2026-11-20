@@ -1,0 +1,46 @@
+text,intent
+I sold goods for K120,sale
+I sold bread for K120,sale
+customer paid me K80,sale
+I made a sale of K500,sale
+I earned K250 from sales,sale
+I received K400 from customers,sale
+today sales are K900,sale
+sold airtime worth K100,sale
+I got K60 from a customer,sale
+money came in from selling vegetables,sale
+a customer bought groceries for K320,sale
+I have income from sales of K700,sale
+I spent K35 on transport,expense
+I bought stock for K600,expense
+paid rent of K1200,expense
+I paid the supplier K500,expense
+transport cost me K40,expense
+business expense K90 for airtime,expense
+I purchased cooking oil for K250,expense
+I used K70 for fuel,expense
+paid K55 for a bus,expense
+stock purchases were K800,expense
+I paid for electricity K130,expense
+money went out for shop supplies,expense
+How much did I make today,summary
+show my sales for today,summary
+what were my expenses today,summary
+give me a business summary,summary
+how much cash came in,summary
+total sales and expenses,summary
+what did I spend today,summary
+show today business totals,summary
+how is my business doing,summary
+tell me my sales and costs,summary
+what is my cash movement,summary
+summarize my records,summary
+What is the weather today,unknown
+Tell me a joke,unknown
+What is the capital of Zambia,unknown
+Help me write a school essay,unknown
+Transfer money between my own accounts,unknown
+How much tax do I owe,unknown
+File my tax return for me,unknown
+What time is it,unknown
+
