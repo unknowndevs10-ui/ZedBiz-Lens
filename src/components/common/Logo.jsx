@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 export function LogoMark({ size = 28 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="8" fill="#1F6F6B" />
-      <circle cx="14.5" cy="14.5" r="6.5" fill="none" stroke="#fff" strokeWidth="2.6" />
-      <path d="M19.5 19.5 25 25" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
-      <circle cx="14.5" cy="14.5" r="2.3" fill="#E0A84B" />
+      <rect width="32" height="32" rx="10" fill="#1F6F6B" />
+      <circle cx="14" cy="14" r="8.25" fill="none" stroke="#fff" strokeWidth="1.8" opacity=".92" />
+      <path d="M20 20 26 26" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M9.5 16.5 12.5 13.5 15 15.2 18.7 10.7" fill="none" stroke="#E0A84B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="18.7" cy="10.7" r="1.3" fill="#E0A84B" />
     </svg>
   );
 }

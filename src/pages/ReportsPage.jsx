@@ -69,8 +69,10 @@ export default function ReportsPage() {
             <dl>
               <PreviewRow label="Turnover in period" value={formatKwacha(taxData.turnover.period)} />
               <PreviewRow label="Projected annual turnover" value={formatKwacha(taxData.turnover.annualised)} />
-              <PreviewRow label="Progress to placeholder threshold" value={formatPercent(taxData.vat.percent, 0)} strong />
-              <PreviewRow label="Turnover tax estimate" value={`${formatKwacha(taxData.turnoverEstimate.low)} – ${formatKwacha(taxData.turnoverEstimate.high)}`} />
+              <PreviewRow label="VAT threshold progress indicator" value={formatPercent(taxData.vat.percent, 0)} strong />
+              <PreviewRow label="Turnover-tax scenario · excess-only" value={taxData.turnoverEstimate.aboveCeiling ? 'Above reference ceiling · not estimated' : formatKwacha(taxData.turnoverEstimate.excessOnly)} />
+              <PreviewRow label="Turnover-tax scenario · total turnover" value={taxData.turnoverEstimate.aboveCeiling ? 'Above reference ceiling · not estimated' : formatKwacha(taxData.turnoverEstimate.totalTurnover)} />
+              <PreviewRow label="Income tax / VAT payable" value="Not calculated" />
             </dl>
           )}
         </ReportCard>

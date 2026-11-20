@@ -1,5 +1,5 @@
 import { Suspense, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import DemoBanner from './DemoBanner';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
@@ -12,13 +12,18 @@ import { LoadingState } from '../common/States';
 import AddEntryModal from '../transactions/AddEntryModal';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
+import { useDemoSession } from '../../context/DemoSessionContext';
 
 export default function AppShell() {
+  const { active } = useDemoSession();
+  const location = useLocation();
   const { resetDemoData } = useData();
   const { toast } = useToast();
   const [addOpen, setAddOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
+
+  if (!active) return <Navigate to="/workspace" state={{ from: location }} replace />;
 
   async function confirmReset() {
     setResetting(true);

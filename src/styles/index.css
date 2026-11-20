@@ -22,6 +22,57 @@
   .field {
     @apply block w-full rounded-md border border-line bg-white px-3 text-[15px] text-ink shadow-card placeholder:text-ink-muted/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25 disabled:bg-surface;
   }
+  .eyebrow {
+    @apply text-[10px] font-extrabold uppercase tracking-[0.18em] text-brand-700;
+  }
+  .agent-header {
+    background: linear-gradient(115deg, #144643 0%, #1F6F6B 60%, #2A8681 100%);
+  }
+  .agent-header-glow {
+    position: absolute;
+    width: 22rem;
+    height: 22rem;
+    right: -8rem;
+    top: -15rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(224,168,75,.28) 0%, rgba(224,168,75,0) 68%);
+  }
+  .agent-orb {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    width: 5.25rem;
+    height: 5.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 9999px;
+    background: rgba(255,255,255,.09);
+    box-shadow: 0 0 0 7px rgba(255,255,255,.04), inset 0 0 24px rgba(255,255,255,.08);
+  }
+  .agent-orb-core {
+    display: grid;
+    width: 3.4rem;
+    height: 3.4rem;
+    place-items: center;
+    border-radius: 9999px;
+    color: #fff;
+    background: radial-gradient(circle at 35% 25%, #5ba49c, #195A57 70%);
+  }
+  .agent-orb i {
+    position: absolute;
+    inset: -5px;
+    border: 1px solid rgba(255,255,255,.24);
+    border-radius: 9999px;
+    animation: agent-breathe 5s ease-in-out infinite;
+  }
+  .agent-orb i:nth-of-type(2) { inset: -12px; opacity: .6; animation-delay: 1.2s; }
+  .agent-orb i:nth-of-type(3) { inset: -19px; opacity: .3; animation-delay: 2.4s; }
+  .agent-orb-thinking i { animation-duration: 1.6s; }
+  @keyframes agent-breathe {
+    0%, 100% { transform: scale(.98); opacity: .25; }
+    50% { transform: scale(1.04); opacity: .75; }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

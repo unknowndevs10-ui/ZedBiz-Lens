@@ -40,6 +40,14 @@ export const transactionService = {
     return { entryId: res.entryId ?? res.entry_id, text: res.text ?? text, transactions: (res.transactions || []).map(normalizeTransaction) };
   },
 
+  async submitAgentDraft({ businessId, text, draft }) {
+    if (!config.useMockData || typeof api.submitAgentDraft !== 'function') {
+      throw new Error('Agent draft saving is only available in the synthetic demo workspace.');
+    }
+    const res = await api.submitAgentDraft({ businessId, text, draft });
+    return { entryId: res.entryId ?? res.entry_id, text: res.text ?? text, transactions: (res.transactions || []).map(normalizeTransaction) };
+  },
+
   async update(id, patch) {
     return normalizeTransaction(await api.updateTransaction(id, patch));
   },

@@ -6,16 +6,20 @@ import './styles/index.css';
 import App from './App';
 import { DataProvider } from './context/DataContext';
 import { ToastProvider } from './context/ToastContext';
+import { DemoSessionProvider } from './context/DemoSessionContext';
+import { LoadingState } from './components/common/States';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <ToastProvider>
-        <DataProvider>
-          <Suspense fallback={null}>
-            <App />
-          </Suspense>
-        </DataProvider>
+        <DemoSessionProvider>
+          <DataProvider>
+            <Suspense fallback={<LoadingState label="Preparing your workspace" />}>
+              <App />
+            </Suspense>
+          </DataProvider>
+        </DemoSessionProvider>
       </ToastProvider>
     </BrowserRouter>
   </StrictMode>,

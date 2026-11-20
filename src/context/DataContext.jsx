@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { transactionService } from '../services/transactionService';
+import { clearAgentEvents } from '../services/agentLog';
 
 const DataContext = createContext(null);
 const BUSINESS_KEY = 'zedbiz-lens:active-business';
@@ -71,6 +72,15 @@ export function DataProvider({ children }) {
     [businessId],
   );
 
+  const submitAgentDraft = useCallback(
+    async ({ text, draft }) => {
+      const result = await transactionService.submitAgentDraft({ businessId, text, draft });
+      setTransactions((list) => [...result.transactions, ...list]);
+      return result;
+    },
+    [businessId],
+  );
+
   const updateTransaction = useCallback(
     async (id, patch) => {
       const tx = await transactionService.update(id, patch);
@@ -120,6 +130,7 @@ export function DataProvider({ children }) {
 
   const resetDemoData = useCallback(async () => {
     await transactionService.resetDemo();
+    clearAgentEvents();
     await load();
     bump();
   }, [load, bump]);
@@ -138,6 +149,7 @@ export function DataProvider({ children }) {
       version,
       reload: load,
       submitEntry,
+      submitAgentDraft,
       updateTransaction,
       confirmTransaction,
       rejectTransaction,
@@ -145,7 +157,7 @@ export function DataProvider({ children }) {
       rejectMany,
       resetDemoData,
     };
-  }, [businesses, businessId, setBusinessId, transactions, status, error, version, load, submitEntry, updateTransaction, confirmTransaction, rejectTransaction, confirmMany, rejectMany, resetDemoData]);
+  }, [businesses, businessId, setBusinessId, transactions, status, error, version, load, submitEntry, submitAgentDraft, updateTransaction, confirmTransaction, rejectTransaction, confirmMany, rejectMany, resetDemoData]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

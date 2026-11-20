@@ -9,7 +9,9 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
 const TaxPage = lazy(() => import('./pages/TaxPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const AgentPage = lazy(() => import('./pages/AgentPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const AccessPage = lazy(() => import('./pages/AccessPage'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -25,10 +27,12 @@ export default function App() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/workspace" element={<AccessPage />} />
         <Route path="/app" element={<AppShell />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="agent" element={<AgentPage />} />
           <Route path="tax" element={<TaxPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="*" element={<NotFoundPage />} />

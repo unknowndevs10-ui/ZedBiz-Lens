@@ -107,6 +107,38 @@ export const mockApi = {
     return { entryId, text: trimmed, transactions: created };
   },
 
+  async submitAgentDraft({ businessId, text, draft }) {
+    await wait(180);
+    const source = String(text || '').trim();
+    const amount = Number(draft?.amount);
+    if (source.length < 3 || source.length > 500) throw new Error('The source note must be between 3 and 500 characters.');
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000_000_000) throw new Error('Enter an amount greater than zero.');
+    if (!['income', 'expense'].includes(draft?.type)) throw new Error('The agent can only draft an income or expense entry.');
+    if (!businessId || !BUSINESSES.some((business) => business.id === businessId)) throw new Error('Choose a demo business first.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(draft?.date || '')) throw new Error('Choose a valid date.');
+    const state = load();
+    const entryId = `agent-${Date.now()}`;
+    const transaction = {
+      id: `${entryId}-1`,
+      entryId,
+      businessId,
+      type: draft.type,
+      category: String(draft.category || '').slice(0, 60) || (draft.type === 'income' ? 'Sales' : 'Other expenses'),
+      description: String(draft.description || source).slice(0, 80),
+      amount,
+      date: draft.date,
+      confidence: Number.isFinite(Number(draft.confidence)) ? Math.min(1, Math.max(0, Number(draft.confidence))) : null,
+      status: 'pending',
+      source,
+      synthetic: false,
+      ...(draft.type === 'income' ? { taxable: 'unsure', taxReason: 'Review tax treatment before using this record.' } : {}),
+      createdAt: new Date().toISOString(),
+    };
+    state.transactions.push(transaction);
+    persist(state);
+    return { entryId, text: source, transactions: [transaction] };
+  },
+
   async updateTransaction(id, patch) {
     await wait(200);
     return applyChange(id, patch);
