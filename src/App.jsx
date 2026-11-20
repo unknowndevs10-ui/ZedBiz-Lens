@@ -12,7 +12,6 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
 const TaxPage = lazy(() => import('./pages/TaxPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
-const AgentPage = lazy(() => import('./pages/AgentPage'));
 const BusinessProfilePage = lazy(() => import('./pages/BusinessProfilePage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
@@ -59,7 +58,7 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
-          <Route path="agent" element={<AgentPage />} />
+          <Route path="agent" element={<Navigate to="/app/dashboard" replace />} />
           <Route path="profile" element={<BusinessProfilePage />} />
           <Route path="tax" element={<TaxPage />} />
           <Route path="reports" element={<ReportsPage />} />
