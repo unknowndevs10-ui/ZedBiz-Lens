@@ -1,4 +1,3 @@
-import DemoBanner from '../components/layout/DemoBanner';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import Hero from '../components/landing/Hero';
@@ -9,7 +8,6 @@ import AudienceSection from '../components/landing/AudienceSection';
 export default function LandingPage() {
   return (
     <>
-      <DemoBanner />
       <Navbar />
       <main>
         <Hero />
@@ -21,3 +19,4 @@ export default function LandingPage() {
     </>
   );
 }
+
