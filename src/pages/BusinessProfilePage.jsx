@@ -9,7 +9,14 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
-const STEPS = ['You', 'Business', 'How you work', 'Registration', 'Review'];
+const STEPS = ['You', 'Business', 'How you work', 'Goals', 'Registration', 'Review'];
+const GOALS = [
+  { id: 'records', title: 'Keep better records', detail: 'Know what was sold, spent and still owed.', icon: WalletCards },
+  { id: 'profit', title: 'Understand profit', detail: 'See which activity is paying off.', icon: BadgeCheck },
+  { id: 'cashflow', title: 'Manage cash flow', detail: 'Plan for stock, fees and quiet days.', icon: CreditCard },
+  { id: 'tax_ready', title: 'Prepare for tax', detail: 'Organize records before asking for advice.', icon: ShieldCheck },
+  { id: 'growth', title: 'Grow the business', detail: 'Spot practical opportunities to improve.', icon: Sparkles },
+];
 const CHANNELS = [
   { id: 'cash', label: 'Cash', detail: 'Notes, coins, and daily takings', icon: WalletCards },
   { id: 'mobile_money', label: 'Mobile money', detail: 'Mobile wallet payments', icon: CreditCard },
@@ -24,7 +31,8 @@ const DEFAULT_FORM = {
   displayName: '', role: 'Owner', businessName: '', businessType: 'Market trader',
   businessFormality: 'informal', province: 'Lusaka', district: '', language: 'English',
   recordChannels: ['cash'], pacraStatus: 'unsure', zraStatus: 'unsure',
-  vatStatus: 'unsure', formalizationInterest: 'yes',
+  vatStatus: 'unsure', formalizationInterest: 'yes', goals: ['records', 'profit'],
+  biggestChallenge: 'keeping_records', operatingDaysPerWeek: '6',
 };
 
 function ChoiceCards({ items, value, onChange, columns = 3 }) {
@@ -55,11 +63,15 @@ export default function BusinessProfilePage() {
   const toggleChannel = (id) => update('recordChannels', form.recordChannels.includes(id)
     ? form.recordChannels.filter((channel) => channel !== id)
     : [...form.recordChannels, id]);
+  const toggleGoal = (id) => update('goals', form.goals.includes(id)
+    ? form.goals.filter((goal) => goal !== id)
+    : [...form.goals, id]);
 
   function next() {
     if (step === 0 && !form.displayName.trim()) return toast('Tell us what to call you before continuing.', { tone: 'warning' });
     if (step === 1 && !form.businessName.trim()) return toast('Add your business or trading name to continue.', { tone: 'warning' });
     if (step === 2 && !form.recordChannels.length) return toast('Choose at least one way you handle records.', { tone: 'warning' });
+    if (step === 3 && !form.goals.length) return toast('Choose one goal so ZedBiz can shape your guidance.', { tone: 'warning' });
     setStep((current) => Math.min(current + 1, STEPS.length - 1));
   }
 
@@ -80,14 +92,14 @@ export default function BusinessProfilePage() {
     <div className="mx-auto max-w-4xl">
       <header className="mb-6">
         <p className="eyebrow">A better fit, from the first hello</p>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{step === 0 ? 'Let's get to know you' : step === 4 ? 'Your business, your way' : 'Let's get to know your business'}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">A few thoughtful steps help ZedBiz shape a workspace around the way you actually trade. This prototype keeps everything in this browser.</p>
+        <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{step === 0 ? "Let's get to know you" : step === 5 ? 'Your business, your way' : "Let's get to know your business"}</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">A few thoughtful steps help ZedBiz understand the way you trade, what matters to you and which patterns to watch. You can update these answers later.</p>
       </header>
 
       <div className="mb-5 rounded-xl border border-line bg-[#101718] p-4 sm:p-5">
         <div className="mb-3 flex items-center justify-between gap-3"><span className="text-xs font-bold text-ink-muted">YOUR SETUP</span><span className="text-xs font-extrabold text-brand-700">Step {step + 1} of {STEPS.length} � {STEPS[step]}</span></div>
-        <div className="grid grid-cols-5 gap-2" aria-label={'Step ' + (step + 1) + ' of ' + STEPS.length}>{STEPS.map((name, index) => <div key={name} className={'h-1.5 rounded-full transition-colors duration-300 ' + (index <= step ? 'bg-brand' : 'bg-line')} />)}</div>
-        <div className="mt-2 hidden grid-cols-5 text-[10px] font-semibold text-ink-muted sm:grid">{STEPS.map((name) => <span key={name}>{name}</span>)}</div>
+        <div className="grid grid-cols-6 gap-2" aria-label={'Step ' + (step + 1) + ' of ' + STEPS.length}>{STEPS.map((name, index) => <div key={name} className={'h-1.5 rounded-full transition-colors duration-300 ' + (index <= step ? 'bg-brand' : 'bg-line')} />)}</div>
+        <div className="mt-2 hidden grid-cols-6 text-[10px] font-semibold text-ink-muted sm:grid">{STEPS.map((name) => <span key={name}>{name}</span>)}</div>
       </div>
 
       <Card className="overflow-hidden">
@@ -121,16 +133,23 @@ export default function BusinessProfilePage() {
             <div className="grid gap-3 sm:grid-cols-3">{CHANNELS.map(({ id, label, detail, icon: Icon }) => { const selected = form.recordChannels.includes(id); return <button key={id} type="button" aria-pressed={selected} onClick={() => toggleChannel(id)} className={'flex min-h-28 flex-col items-start rounded-xl border p-4 text-left transition-all duration-200 hover:-translate-y-0.5 focus-ring ' + (selected ? 'border-brand bg-brand-50' : 'border-line bg-[#121a1b] hover:border-brand-200')}><Icon className={'mb-2 h-5 w-5 ' + (selected ? 'text-brand-700' : 'text-ink-muted')} /><span className="text-sm font-extrabold">{label}</span><span className="mt-1 text-xs leading-5 text-ink-muted">{detail}</span></button>; })}</div>
           </section>}
 
-          {step === 3 && <section aria-labelledby="step-registration">
+          {step === 3 && <section aria-labelledby="step-goals">
+            <div className="mb-5 flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Sparkles className="h-5 w-5" /></div><div><h2 id="step-goals" className="text-lg font-extrabold">What would make business easier?</h2><p className="mt-1 text-sm text-ink-muted">Choose the goals and everyday challenge you want ZedBiz to pay attention to first.</p></div></div>
+            <div className="grid gap-3 sm:grid-cols-2">{GOALS.map(({ id, title, detail, icon: Icon }) => { const selected = form.goals.includes(id); return <button key={id} type="button" aria-pressed={selected} onClick={() => toggleGoal(id)} className={'flex min-h-24 items-start gap-3 rounded-xl border p-4 text-left transition-colors focus-ring ' + (selected ? 'border-brand bg-brand-50' : 'border-line bg-[#121a1b] hover:border-brand-200')}><Icon className={'mt-0.5 h-5 w-5 shrink-0 ' + (selected ? 'text-brand-700' : 'text-ink-muted')} /><span><span className="block text-sm font-extrabold">{title}</span><span className="mt-1 block text-xs leading-5 text-ink-muted">{detail}</span></span></button>; })}</div>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2"><Field label="What is hardest to manage right now?">{(props) => <Select {...props} value={form.biggestChallenge} onChange={(event) => update('biggestChallenge', event.target.value)}><option value="keeping_records">Keeping daily records</option><option value="pricing">Setting prices and understanding profit</option><option value="stock">Planning stock or supplies</option><option value="cashflow">Managing cash flow</option><option value="customer_credit">Tracking customer credit</option><option value="tax">Understanding tax responsibilities</option><option value="growth">Finding room to grow</option></Select>}</Field><Field label="How many days do you usually trade each week?">{(props) => <Select {...props} value={form.operatingDaysPerWeek} onChange={(event) => update('operatingDaysPerWeek', event.target.value)}>{[1, 2, 3, 4, 5, 6, 7].map((days) => <option key={days} value={String(days)}>{days} {days === 1 ? 'day' : 'days'}</option>)}</Select>}</Field></div>
+            <p className="mt-4 text-xs leading-5 text-ink-muted">These answers guide suggestions; the agent does not make decisions or change your records.</p>
+          </section>}
+
+          {step === 4 && <section aria-labelledby="step-registration">
             <div className="mb-5 flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><ShieldCheck className="h-5 w-5" /></div><div><h2 id="step-registration" className="text-lg font-extrabold">Your registration journey</h2><p className="mt-1 text-sm text-ink-muted">This is self-reported readiness, not a ZRA eligibility decision.</p></div></div>
             {form.businessFormality === 'informal' ? <div><p className="mb-4 text-sm leading-6 text-ink-muted">Many businesses begin informally. Would guidance on formalising be useful later?</p><ChoiceCards value={form.formalizationInterest} onChange={(value) => update('formalizationInterest', value)} items={[{ id: 'yes', title: 'Yes, guide me' }, { id: 'unsure', title: 'I'm exploring' }, { id: 'no', title: 'Not right now' }]} /></div> : <div className="space-y-5"><p className="text-sm leading-6 text-ink-muted">Share only whether these apply. Do not enter registration or tax numbers.</p>{[['pacraStatus', 'Registered with PACRA?'], ['zraStatus', 'Have a ZRA TPIN?'], ['vatStatus', 'Registered for VAT?']].map(([key, label]) => <fieldset key={key}><legend className="mb-2 text-sm font-bold">{label}</legend><div className="flex flex-wrap gap-2">{[{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'Not yet' }, { id: 'unsure', label: 'Not sure' }].map((choice) => <button key={choice.id} type="button" aria-pressed={form[key] === choice.id} onClick={() => update(key, choice.id)} className={'rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus-ring ' + (form[key] === choice.id ? 'border-brand bg-brand-50 text-brand-700' : 'border-line bg-[#121a1b] text-ink-muted hover:border-brand-200')}>{choice.label}</button>)}</div></fieldset>)}</div>}
             <Notification tone="info" title="Your answers are not checked against government records" className="mt-6">They help organize the experience only. Confirm status and obligations with Finance or ZRA before acting on them.</Notification>
           </section>}
 
-          {step === 4 && <section aria-labelledby="step-review">
+          {step === 5 && <section aria-labelledby="step-review">
             <div className="mb-5 flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Check className="h-5 w-5" /></div><div><h2 id="step-review" className="text-lg font-extrabold">A workspace made for {form.businessName}</h2><p className="mt-1 text-sm text-ink-muted">Check your details. You can update this profile at any time.</p></div></div>
-            <dl className="divide-y divide-line rounded-xl border border-line bg-[#101718] px-4">{[['Your name and role', form.displayName + ' � ' + form.role], ['Business', form.businessName + ' � ' + form.businessType], ['Registration journey', form.businessFormality === 'informal' ? 'Informal / not registered' : form.businessFormality === 'registered' ? 'Formally registered' : 'Working towards registration'], ['Location', [form.district, form.province].filter(Boolean).join(', ')], ['Records', form.recordChannels.map((channel) => CHANNELS.find((item) => item.id === channel)?.label).filter(Boolean).join(', ')], ['Language preference', form.language]].map(([label, value]) => <div key={label} className="grid gap-1 py-3 sm:grid-cols-[12rem_1fr]"><dt className="text-xs font-semibold text-ink-muted">{label}</dt><dd className="text-sm font-bold">{value}</dd></div>)}</dl>
-            <p className="mt-4 text-xs leading-5 text-ink-muted">Your own ledger begins empty. Add and confirm your first records after setup. Sample businesses remain available from the business switcher.</p>
+            <dl className="divide-y divide-line rounded-xl border border-line bg-[#101718] px-4">{[['Your name and role', form.displayName + ' � ' + form.role], ['Business', form.businessName + ' � ' + form.businessType], ['Registration journey', form.businessFormality === 'informal' ? 'Informal / not registered' : form.businessFormality === 'registered' ? 'Formally registered' : 'Working towards registration'], ['Location', [form.district, form.province].filter(Boolean).join(', ')], ['Customer payments', form.recordChannels.map((channel) => CHANNELS.find((item) => item.id === channel)?.label).filter(Boolean).join(', ')], ['Your first goals', form.goals.map((goal) => GOALS.find((item) => item.id === goal)?.title).filter(Boolean).join(', ')], ['Language preference', form.language]].map(([label, value]) => <div key={label} className="grid gap-1 py-3 sm:grid-cols-[12rem_1fr]"><dt className="text-xs font-semibold text-ink-muted">{label}</dt><dd className="text-sm font-bold">{value}</dd></div>)}</dl>
+            <p className="mt-4 text-xs leading-5 text-ink-muted">Your ledger begins empty. After setup, your own entries will power the dashboard, calculator and business guidance.</p>
           </section>}
         </div>
         <div className="flex items-center justify-between border-t border-line bg-[#0e1516] px-4 py-4 sm:px-7">
