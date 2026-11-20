@@ -1,5 +1,6 @@
 import api from './api';
 import { config } from '../config';
+import { setMockStorageScope } from './mockApi';
 
 /**
  * Adapter between whatever the backend returns and the shape the UI uses.
@@ -27,6 +28,7 @@ export function normalizeTransaction(raw) {
 }
 
 export const transactionService = {
+  setUserScope: (userId) => setMockStorageScope(userId),
   listBusinesses: () => api.listBusinesses(),
 
   async list(businessId) {
@@ -65,3 +67,4 @@ export const transactionService = {
     return api.resetDemoData();
   },
 };
+

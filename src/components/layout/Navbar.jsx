@@ -21,7 +21,7 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
-          <Button to="/app/dashboard" size="sm" className="ml-3">Open dashboard</Button>
+          <Button to="/login" size="sm" className="ml-3">Team sign in</Button>
         </nav>
         <button type="button" className="rounded-md p-2 text-ink focus-ring md:hidden" aria-expanded={open} aria-controls="mobile-menu" aria-label={open ? 'Close menu' : 'Open menu'} onClick={() => setOpen((v) => !v)}>
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -34,9 +34,10 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
-          <Button to="/app/dashboard" className="mt-2 w-full">Open dashboard</Button>
+          <Button to="/login" className="mt-2 w-full">Team sign in</Button>
         </nav>
       )}
     </header>
   );
 }
+

@@ -1,30 +1,32 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { transactionService } from '../services/transactionService';
-import { clearAgentEvents } from '../services/agentLog';
+import { clearAgentEvents, setAgentLogScope } from '../services/agentLog';
+import { useAuth } from './AuthContext';
 
 const DataContext = createContext(null);
 const BUSINESS_KEY = 'zedbiz-lens:active-business';
 const PROFILE_KEY = 'zedbiz-lens:business-profile:v1';
+const scopedKey = (key, userId) => `${key}:${String(userId || 'guest').replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
-function readStoredBusiness() {
+function readStoredBusiness(userId) {
   try {
-    return localStorage.getItem(BUSINESS_KEY);
+    return localStorage.getItem(scopedKey(BUSINESS_KEY, userId));
   } catch {
     return null;
   }
 }
 
-function readStoredProfile() {
+function readStoredProfile(userId) {
   try {
-    const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    const profile = JSON.parse(localStorage.getItem(scopedKey(PROFILE_KEY, userId)) || 'null');
     return profile && typeof profile === 'object' ? profile : null;
   } catch {
     return null;
   }
 }
 
-function readInitialBusiness() {
-  return readStoredBusiness() || (readStoredProfile() ? 'my-business' : 'retail');
+function readInitialBusiness(userId) {
+  return readStoredBusiness(userId) || (readStoredProfile(userId) ? 'my-business' : 'retail');
 }
 
 /**
@@ -32,14 +34,27 @@ function readInitialBusiness() {
  * confirmed figure could have changed, so dashboards and tax views refetch.
  */
 export function DataProvider({ children }) {
+  const { user, businessProfile: cloudProfile } = useAuth();
+  const userId = user?.id || 'guest';
   const [businesses, setBusinesses] = useState([]);
-  const [businessId, setBusinessIdState] = useState(readInitialBusiness);
-  const [businessProfile, setBusinessProfileState] = useState(readStoredProfile);
+  const [businessId, setBusinessIdState] = useState(() => readInitialBusiness(userId));
+  const [businessProfile, setBusinessProfileState] = useState(() => readStoredProfile(userId));
   const [transactions, setTransactions] = useState([]);
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [error, setError] = useState(null);
   const [version, setVersion] = useState(0);
   const requestRef = useRef(0);
+
+  useEffect(() => {
+    transactionService.setUserScope(userId);
+    setAgentLogScope(userId);
+    const profile = cloudProfile || readStoredProfile(userId);
+    if (cloudProfile) {
+      try { localStorage.setItem(scopedKey(PROFILE_KEY, userId), JSON.stringify(cloudProfile)); } catch { /* profile remains in memory */ }
+    }
+    setBusinessProfileState(profile);
+    setBusinessIdState(readStoredBusiness(userId) || (profile ? 'my-business' : 'retail'));
+  }, [userId, cloudProfile]);
 
   const load = useCallback(async () => {
     const request = ++requestRef.current;
@@ -68,12 +83,12 @@ export function DataProvider({ children }) {
 
   const setBusinessId = useCallback((id) => {
     try {
-      localStorage.setItem(BUSINESS_KEY, id);
+      localStorage.setItem(scopedKey(BUSINESS_KEY, userId), id);
     } catch {
       /* ignore */
     }
     setBusinessIdState(id);
-  }, []);
+  }, [userId]);
 
   const saveBusinessProfile = useCallback((profile) => {
     const clean = {
@@ -94,11 +109,11 @@ export function DataProvider({ children }) {
       formalizationInterest: profile.formalizationInterest || 'unsure',
       updatedAt: new Date().toISOString(),
     };
-    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(clean)); } catch { /* profile remains available in memory */ }
+    try { localStorage.setItem(scopedKey(PROFILE_KEY, userId), JSON.stringify(clean)); } catch { /* profile remains available in memory */ }
     setBusinessProfileState(clean);
     setBusinessId('my-business');
     return clean;
-  }, [setBusinessId]);
+  }, [setBusinessId, userId]);
 
   const bump = useCallback(() => setVersion((v) => v + 1), []);
   const replaceOne = useCallback((tx) => setTransactions((list) => list.map((t) => (t.id === tx.id ? tx : t))), []);
@@ -209,3 +224,4 @@ export function useData() {
   if (!ctx) throw new Error('useData must be used inside <DataProvider>');
   return ctx;
 }
+

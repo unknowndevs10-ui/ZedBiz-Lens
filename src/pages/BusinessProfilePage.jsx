@@ -7,6 +7,7 @@ import Notification from '../components/common/Notification';
 import { Field, Input, Select } from '../components/common/FormControls';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 const STEPS = ['You', 'Business', 'How you work', 'Registration', 'Review'];
 const CHANNELS = [
@@ -45,9 +46,10 @@ function ChoiceCards({ items, value, onChange, columns = 3 }) {
 export default function BusinessProfilePage() {
   const { businessProfile, saveBusinessProfile } = useData();
   const { toast } = useToast();
+  const { saveBusinessProfile: saveSecureBusinessProfile, businessProfile: securedProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM, ...(businessProfile || {}) }));
+  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM, ...(securedProfile || businessProfile || {}) }));
   const [saving, setSaving] = useState(false);
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const toggleChannel = (id) => update('recordChannels', form.recordChannels.includes(id)
@@ -61,23 +63,29 @@ export default function BusinessProfilePage() {
     setStep((current) => Math.min(current + 1, STEPS.length - 1));
   }
 
-  function finish() {
+  async function finish() {
     setSaving(true);
-    saveBusinessProfile(form);
-    toast('Your business profile and clean ledger are ready.', { title: 'You are all set' });
-    window.setTimeout(() => navigate('/app/dashboard'), 250);
+    try {
+      const cleanProfile = saveBusinessProfile(form);
+      await saveSecureBusinessProfile(cleanProfile);
+      toast('Your profile is saved securely. Your clean ledger is ready.', { title: 'You are all set' });
+      window.setTimeout(() => navigate('/app/dashboard'), 250);
+    } catch (error) {
+      toast(error.message || 'We could not save your profile. Check your connection and try again.', { tone: 'danger', title: 'Setup not saved' });
+      setSaving(false);
+    }
   }
 
   return (
     <div className="mx-auto max-w-4xl">
       <header className="mb-6">
         <p className="eyebrow">A better fit, from the first hello</p>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{step === 0 ? 'Let’s get to know you' : step === 4 ? 'Your business, your way' : 'Let’s get to know your business'}</h1>
+        <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{step === 0 ? 'Let's get to know you' : step === 4 ? 'Your business, your way' : 'Let's get to know your business'}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">A few thoughtful steps help ZedBiz shape a workspace around the way you actually trade. This prototype keeps everything in this browser.</p>
       </header>
 
       <div className="mb-5 rounded-xl border border-line bg-[#101718] p-4 sm:p-5">
-        <div className="mb-3 flex items-center justify-between gap-3"><span className="text-xs font-bold text-ink-muted">YOUR SETUP</span><span className="text-xs font-extrabold text-brand-700">Step {step + 1} of {STEPS.length} · {STEPS[step]}</span></div>
+        <div className="mb-3 flex items-center justify-between gap-3"><span className="text-xs font-bold text-ink-muted">YOUR SETUP</span><span className="text-xs font-extrabold text-brand-700">Step {step + 1} of {STEPS.length} � {STEPS[step]}</span></div>
         <div className="grid grid-cols-5 gap-2" aria-label={'Step ' + (step + 1) + ' of ' + STEPS.length}>{STEPS.map((name, index) => <div key={name} className={'h-1.5 rounded-full transition-colors duration-300 ' + (index <= step ? 'bg-brand' : 'bg-line')} />)}</div>
         <div className="mt-2 hidden grid-cols-5 text-[10px] font-semibold text-ink-muted sm:grid">{STEPS.map((name) => <span key={name}>{name}</span>)}</div>
       </div>
@@ -115,13 +123,13 @@ export default function BusinessProfilePage() {
 
           {step === 3 && <section aria-labelledby="step-registration">
             <div className="mb-5 flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><ShieldCheck className="h-5 w-5" /></div><div><h2 id="step-registration" className="text-lg font-extrabold">Your registration journey</h2><p className="mt-1 text-sm text-ink-muted">This is self-reported readiness, not a ZRA eligibility decision.</p></div></div>
-            {form.businessFormality === 'informal' ? <div><p className="mb-4 text-sm leading-6 text-ink-muted">Many businesses begin informally. Would guidance on formalising be useful later?</p><ChoiceCards value={form.formalizationInterest} onChange={(value) => update('formalizationInterest', value)} items={[{ id: 'yes', title: 'Yes, guide me' }, { id: 'unsure', title: 'I’m exploring' }, { id: 'no', title: 'Not right now' }]} /></div> : <div className="space-y-5"><p className="text-sm leading-6 text-ink-muted">Share only whether these apply. Do not enter registration or tax numbers.</p>{[['pacraStatus', 'Registered with PACRA?'], ['zraStatus', 'Have a ZRA TPIN?'], ['vatStatus', 'Registered for VAT?']].map(([key, label]) => <fieldset key={key}><legend className="mb-2 text-sm font-bold">{label}</legend><div className="flex flex-wrap gap-2">{[{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'Not yet' }, { id: 'unsure', label: 'Not sure' }].map((choice) => <button key={choice.id} type="button" aria-pressed={form[key] === choice.id} onClick={() => update(key, choice.id)} className={'rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus-ring ' + (form[key] === choice.id ? 'border-brand bg-brand-50 text-brand-700' : 'border-line bg-[#121a1b] text-ink-muted hover:border-brand-200')}>{choice.label}</button>)}</div></fieldset>)}</div>}
+            {form.businessFormality === 'informal' ? <div><p className="mb-4 text-sm leading-6 text-ink-muted">Many businesses begin informally. Would guidance on formalising be useful later?</p><ChoiceCards value={form.formalizationInterest} onChange={(value) => update('formalizationInterest', value)} items={[{ id: 'yes', title: 'Yes, guide me' }, { id: 'unsure', title: 'I'm exploring' }, { id: 'no', title: 'Not right now' }]} /></div> : <div className="space-y-5"><p className="text-sm leading-6 text-ink-muted">Share only whether these apply. Do not enter registration or tax numbers.</p>{[['pacraStatus', 'Registered with PACRA?'], ['zraStatus', 'Have a ZRA TPIN?'], ['vatStatus', 'Registered for VAT?']].map(([key, label]) => <fieldset key={key}><legend className="mb-2 text-sm font-bold">{label}</legend><div className="flex flex-wrap gap-2">{[{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'Not yet' }, { id: 'unsure', label: 'Not sure' }].map((choice) => <button key={choice.id} type="button" aria-pressed={form[key] === choice.id} onClick={() => update(key, choice.id)} className={'rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus-ring ' + (form[key] === choice.id ? 'border-brand bg-brand-50 text-brand-700' : 'border-line bg-[#121a1b] text-ink-muted hover:border-brand-200')}>{choice.label}</button>)}</div></fieldset>)}</div>}
             <Notification tone="info" title="Your answers are not checked against government records" className="mt-6">They help organize the experience only. Confirm status and obligations with Finance or ZRA before acting on them.</Notification>
           </section>}
 
           {step === 4 && <section aria-labelledby="step-review">
             <div className="mb-5 flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Check className="h-5 w-5" /></div><div><h2 id="step-review" className="text-lg font-extrabold">A workspace made for {form.businessName}</h2><p className="mt-1 text-sm text-ink-muted">Check your details. You can update this profile at any time.</p></div></div>
-            <dl className="divide-y divide-line rounded-xl border border-line bg-[#101718] px-4">{[['Your name and role', form.displayName + ' · ' + form.role], ['Business', form.businessName + ' · ' + form.businessType], ['Registration journey', form.businessFormality === 'informal' ? 'Informal / not registered' : form.businessFormality === 'registered' ? 'Formally registered' : 'Working towards registration'], ['Location', [form.district, form.province].filter(Boolean).join(', ')], ['Records', form.recordChannels.map((channel) => CHANNELS.find((item) => item.id === channel)?.label).filter(Boolean).join(', ')], ['Language preference', form.language]].map(([label, value]) => <div key={label} className="grid gap-1 py-3 sm:grid-cols-[12rem_1fr]"><dt className="text-xs font-semibold text-ink-muted">{label}</dt><dd className="text-sm font-bold">{value}</dd></div>)}</dl>
+            <dl className="divide-y divide-line rounded-xl border border-line bg-[#101718] px-4">{[['Your name and role', form.displayName + ' � ' + form.role], ['Business', form.businessName + ' � ' + form.businessType], ['Registration journey', form.businessFormality === 'informal' ? 'Informal / not registered' : form.businessFormality === 'registered' ? 'Formally registered' : 'Working towards registration'], ['Location', [form.district, form.province].filter(Boolean).join(', ')], ['Records', form.recordChannels.map((channel) => CHANNELS.find((item) => item.id === channel)?.label).filter(Boolean).join(', ')], ['Language preference', form.language]].map(([label, value]) => <div key={label} className="grid gap-1 py-3 sm:grid-cols-[12rem_1fr]"><dt className="text-xs font-semibold text-ink-muted">{label}</dt><dd className="text-sm font-bold">{value}</dd></div>)}</dl>
             <p className="mt-4 text-xs leading-5 text-ink-muted">Your own ledger begins empty. Add and confirm your first records after setup. Sample businesses remain available from the business switcher.</p>
           </section>}
         </div>
@@ -130,8 +138,9 @@ export default function BusinessProfilePage() {
           {step < STEPS.length - 1 ? <Button icon={ArrowRight} onClick={next}>Continue</Button> : <Button icon={Check} loading={saving} onClick={finish}>Create my workspace</Button>}
         </div>
       </Card>
-      <p className="mt-4 flex items-center gap-2 text-xs leading-5 text-ink-muted"><MapPin className="h-4 w-4 shrink-0" /> Once secure team signup is connected, this guided setup will run right after account verification.</p>
-      <p className="mt-2 flex items-center gap-2 text-xs text-ink-muted"><CircleHelp className="h-4 w-4 shrink-0" /> This prototype stores the profile locally. It does not create a login or share details externally.</p>
+      <p className="mt-4 flex items-center gap-2 text-xs leading-5 text-ink-muted"><MapPin className="h-4 w-4 shrink-0" /> Your answers are saved to your team account and used to personalize your workspace.</p>
+      <p className="mt-2 flex items-center gap-2 text-xs text-ink-muted"><CircleHelp className="h-4 w-4 shrink-0" /> We only ask for business context. Do not enter TPINs, passwords, or payment account numbers here.</p>
     </div>
   );
 }
+

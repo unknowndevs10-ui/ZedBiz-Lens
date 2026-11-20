@@ -1,14 +1,18 @@
 import { NavLink, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, LogOut, Plus, RotateCcw } from 'lucide-react';
 import Logo from '../common/Logo';
 import Button from '../common/Button';
 import BusinessSwitcher from './BusinessSwitcher';
 import { NAV_ITEMS } from './navItems';
 import { useData } from '../../context/DataContext';
 import { config } from '../../config';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Sidebar({ onAddEntry, onReset }) {
   const { pendingCount } = useData();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   return (
     <aside className="sticky top-8 hidden h-[calc(100vh-2rem)] w-64 shrink-0 flex-col border-r border-line bg-[#121a1b] px-4 py-5 lg:flex">
       <Logo to="/app/dashboard" className="px-1" />
@@ -48,7 +52,11 @@ export default function Sidebar({ onAddEntry, onReset }) {
         <Link to="/" className="flex h-9 items-center gap-3 rounded-md px-3 text-[13px] font-semibold text-ink-muted hover:bg-surface hover:text-ink focus-ring">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to home page
         </Link>
+        <button type="button" onClick={async () => { try { await signOut(); navigate('/login', { replace: true }); } catch { /* the session provider will remain available for retry */ } }} className="flex h-9 items-center gap-3 rounded-md px-3 text-[13px] font-semibold text-ink-muted hover:bg-surface hover:text-ink focus-ring">
+          <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out
+        </button>
       </div>
     </aside>
   );
 }
+

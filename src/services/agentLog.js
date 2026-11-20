@@ -1,9 +1,15 @@
 const STORAGE_KEY = 'zedbiz-lens:agent-events:v1';
 const MAX_EVENTS = 100;
+let storageScope = 'guest';
+const scopedKey = () => `${STORAGE_KEY}:${storageScope}`;
+
+export function setAgentLogScope(userId = 'guest') {
+  storageScope = String(userId || 'guest').replace(/[^a-zA-Z0-9_-]/g, '_');
+}
 
 function readEvents() {
   try {
-    const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const value = JSON.parse(localStorage.getItem(scopedKey()) || '[]');
     return Array.isArray(value) ? value.filter((item) => item && typeof item.id === 'string') : [];
   } catch {
     return [];
@@ -22,7 +28,7 @@ export function recordAgentEvent({ businessId, type, message, intent = null }) {
   };
   try {
     const events = readEvents();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([event, ...events].slice(0, MAX_EVENTS)));
+    localStorage.setItem(scopedKey(), JSON.stringify([event, ...events].slice(0, MAX_EVENTS)));
   } catch {
     // Logging must never block the user's business workflow.
   }
@@ -43,5 +49,6 @@ export function getSampleAgentEvents(businessName = 'Demo business') {
 }
 
 export function clearAgentEvents() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* local history is optional */ }
+  try { localStorage.removeItem(scopedKey()); } catch { /* local history is optional */ }
 }
+

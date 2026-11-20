@@ -11,6 +11,15 @@ const STORAGE_KEY = 'zedbiz-lens:demo-data:v1';
 const PROFILE_KEY = 'zedbiz-lens:business-profile:v1';
 const wait = (ms = config.mockLatencyMs) => new Promise((resolve) => setTimeout(resolve, ms));
 let cache = null;
+let storageScope = 'guest';
+const scopedKey = (key) => `${key}:${storageScope}`;
+
+export function setMockStorageScope(userId = 'guest') {
+  const nextScope = String(userId || 'guest').replace(/[^a-zA-Z0-9_-]/g, '_');
+  if (storageScope === nextScope) return;
+  storageScope = nextScope;
+  cache = null;
+}
 
 function seed() {
   const transactions = [];
@@ -20,7 +29,7 @@ function seed() {
 
 function persist(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(scopedKey(STORAGE_KEY), JSON.stringify(state));
   } catch {
     /* storage full or unavailable - the demo keeps working in memory */
   }
@@ -30,7 +39,7 @@ function load() {
   if (cache) return cache;
   let state = null;
   try {
-    state = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    state = JSON.parse(localStorage.getItem(scopedKey(STORAGE_KEY)) || 'null');
   } catch {
     state = null;
   }
@@ -53,7 +62,7 @@ const forBusiness = (state, businessId) => state.transactions.filter((tx) => tx.
 const confirmedFor = (state, businessId) => forBusiness(state, businessId).filter((tx) => tx.status === 'confirmed');
 function customBusiness() {
   try {
-    const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    const profile = JSON.parse(localStorage.getItem(scopedKey(PROFILE_KEY)) || 'null');
     if (profile?.id === 'my-business' && profile.businessName) {
       return { id: profile.id, name: profile.businessName, kind: profile.businessType, location: profile.district || profile.province || profile.location || 'Zambia', profile: true };
     }
@@ -195,3 +204,4 @@ export const mockApi = {
     persist(cache);
   },
 };
+

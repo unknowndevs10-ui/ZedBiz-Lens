@@ -1,6 +1,6 @@
 # ZedBiz Lens
 
-**UnknownDevs · Zamtel × ZRA Innovation Challenge · Intelligent Customer and Business Ecosystem**
+**UnknownDevs � Zamtel x ZRA Innovation Challenge � Intelligent Customer and Business Ecosystem**
 
 ZedBiz Lens is a synthetic-data prototype for small and informal businesses in Zambia. It brings everyday records, clear business summaries and tax-readiness indicators into one calm workspace. The AI layer helps turn short notes into reviewable drafts and routes supported requests to deterministic business tools.
 
@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Open the local Vite URL. Dashboard routes open directly; the team login is not connected yet, so this build is still a public synthetic prototype. Do not enter real business or personal details until Supabase access control is configured.
+Open the local Vite URL. The landing page is public; the app workspace requires a Supabase sign-in from an invited UnknownDevs team account. New team members are guided into a five-step business profile setup after accepting their invite.
 
 ```powershell
 npm test
@@ -44,7 +44,17 @@ The test suite checks the local intent baseline. The calculator tests are in `ag
 
 ## Team access setup still required
 
-The signup and login screen is intentionally not simulated. Once the Supabase project is supplied, connect invite-only email/password auth, restrict invitations to the six approved team addresses in the Supabase project, enforce authorization at the auth/database layer, and route a successful signup into the five-step profile setup. Until then, this is an open local prototype. Never commit credentials or a plaintext password handoff file to the repository or ZIP.
+### Supabase team access
+
+The app uses Supabase Auth for email/password sessions. Self-service account creation is not offered in the UI. Add the approved team members from Supabase Dashboard > Authentication > Users using **Invite user**, and keep public signups disabled in Authentication > Settings. The `public.team_members` table is the database allowlist; the app checks it after sign-in. The `public.business_profiles` table stores each member's profile under their Auth user ID with row-level security enabled.
+
+1. `.env.example` shows the optional `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` overrides. The connected project's browser-safe URL and publishable key are bundled as defaults so the ZIP and Vercel build can sign in without build-time secrets. Never use a secret/service-role key in Vite.
+2. The migration at `supabase/migrations/202611200001_team_access_and_business_profiles.sql` creates the allowlist and protected profile table. It has been applied to the connected challenge project.
+3. The connected challenge project already has the six approved team entries in `public.team_members`. For a new environment, add the approved team email addresses to that table in Supabase SQL Editor. Keep those addresses in the private project database, not in a public repository.
+4. Set the Supabase Auth Site URL to the local app origin during development, and add the local origin plus the final Vercel URL to the allowed redirect URLs. Invite recipients open the secure link, choose their own password, and then complete onboarding.
+5. Restart Vite or rebuild `dist` after changing the environment values.
+
+Passwords are set individually through Supabase invite links. Do not share a common password sheet; invite links let each person establish a private password and use the reset flow later.
 
 ## AI and calculation design
 
@@ -81,13 +91,14 @@ python Trial_ZRA_Calculator.py
 
 ## Hosting on Vercel
 
-Import this repository as a Vite project with the default build command `npm run build` and output directory `dist`. `vercel.json` includes SPA route fallback and security headers. The default Vercel demo uses the in-browser model and synthetic records; it does not require a Python service or environment secret. If you connect a separately hosted FastAPI service, restrict CORS to the exact Vercel origin and update the Content Security Policy for that service host.
+Import this repository as a Vite project with the default build command `npm run build` and output directory `dist`. The connected Supabase URL and publishable key are already bundled as safe client defaults; you can instead override them with Vercel's Production, Preview and Development environment variables. `vercel.json` includes SPA route fallback and security headers. The in-browser model and synthetic records do not require a Python service. If you connect a separately hosted FastAPI service, restrict CORS to the exact Vercel origin and update the Content Security Policy for that service host.
 
 ## Security and privacy in this demo
 
-- Business profile and user-entered demo records stay in this browser's `localStorage`; sample records remain labeled synthetic.
+- Team access and business profile records use Supabase Auth and database row-level security. The profile is readable and writable only by its owning team account.
+- Synthetic demo transactions and agent history stay in this browser's `localStorage`, with separate storage scopes for each signed-in team member. Sample records remain labeled synthetic.
 - Agent history records the event type and outcome, not the raw note text.
-- There is no authentication, server authorization, shared database, or multi-user isolation. All workspace routes are open for challenge judging; use synthetic information only.
+- User transaction records are still a local prototype layer. They are not yet backed by a shared database, so continue using synthetic transaction data only.
 - Do not enter real business, identity, tax or payment information.
 - Security response headers are configured in `vercel.json`. If the optional API is hosted separately, allow only the app origin and avoid wildcard CORS.
 
@@ -104,8 +115,9 @@ Import this repository as a Vite project with the default build command `npm run
 2. **Receipt capture:** add OCR that highlights extracted fields and asks the owner to confirm uncertain values; never infer tax treatment from an image alone.
 3. **Connectivity resilience:** queue signed, duplicate-safe SMS/USSD events and sync them when data service returns, using a Zamtel sandbox before any live integration.
 4. **Tax rules governance:** have Finance approve versioned rules and worked examples, then lock them with regression tests before showing payable amounts.
-5. **Production security:** add real identity, server-side authorization, encrypted tenant-isolated storage, audit history, and retention controls before accepting real business records.
+5. **Production security:** move transaction records from browser storage into owner-scoped Supabase tables, then add audit history and retention controls before accepting real business records.
 
 ## Not production-ready yet
 
-Real authentication and server-side authorization, durable tenant-isolated storage, verified tax rules and eligibility logic, real-world and local-language model evaluation, receipt OCR, Zamtel USSD/SMS/connectivity, and ZRA integration remain future layers. No AI prediction can confirm a transaction or determine tax payable.
+Invited-team authentication, allowlist authorization, row-level secured business profiles, and the first-user onboarding flow are implemented. Durable tenant-isolated transaction storage, verified tax rules and eligibility logic, real-world and local-language model evaluation, receipt OCR, Zamtel USSD/SMS/connectivity, and ZRA integration remain future layers. No AI prediction can confirm a transaction or determine tax payable.
+
