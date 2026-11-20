@@ -70,22 +70,26 @@ export default function TaxPage() {
                   <dd className="mt-1.5 text-xl font-extrabold tabular-nums">{formatKwacha(data.turnover.annualised)}</dd>
                 </div>
                 <div className="bg-white p-4 sm:p-5">
-                  <dt className="text-[13px] font-semibold text-ink-muted">Turnover tax estimate for the period</dt>
-                  <dd className="mt-1.5 text-xl font-extrabold tabular-nums">{formatKwacha(data.turnoverEstimate.low)} – {formatKwacha(data.turnoverEstimate.high)}</dd>
+                  <dt className="text-[13px] font-semibold text-ink-muted">Annualised turnover-tax scenarios</dt>
+                  <dd className="mt-1.5 text-sm font-bold tabular-nums">
+                    {data.turnoverEstimate.excessOnly == null
+                      ? 'Review required'
+                      : `${formatKwacha(data.turnoverEstimate.excessOnly)} / ${formatKwacha(data.turnoverEstimate.totalTurnover)}`}
+                  </dd>
                 </div>
               </dl>
-              <p className="px-4 py-3 text-[13px] text-ink-muted sm:px-5">The estimate range uses placeholder rates and is for demonstration only.</p>
+              <p className="px-4 py-3 text-[13px] text-ink-muted sm:px-5">Values are excess-only / full-turnover scenarios, not a range or tax decision. They are projected from the last 90 days and need Finance review.</p>
             </Card>
 
             <Card className="lg:col-span-2">
-              <CardHeader title="VAT threshold progress" description="Placeholder threshold, not the official figure" />
+              <CardHeader title="VAT threshold progress" description="Reference indicator only; taxable-supply rules apply" />
               <div className="p-4 sm:p-5"><TaxProgress vat={data.vat} /></div>
             </Card>
           </div>
 
           <section className="mt-8" aria-labelledby="regimes-heading">
-            <h2 id="regimes-heading" className="text-[15px] font-bold">Regime comparison</h2>
-            <p className="mb-3 mt-0.5 text-[13px] text-ink-muted">The same records under three illustrative regimes. Rates are placeholders.</p>
+            <h2 id="regimes-heading" className="text-[15px] font-bold">Tax scenarios and limits</h2>
+            <p className="mb-3 mt-0.5 text-[13px] text-ink-muted">The turnover-tax card shows two alternative bases. Income-tax and VAT liabilities are left uncalculated where required details are missing.</p>
             <RegimeComparison regimes={data.regimes} lowestId={data.lowestRegimeId} />
           </section>
 
@@ -123,3 +127,4 @@ export default function TaxPage() {
     </div>
   );
 }
+
