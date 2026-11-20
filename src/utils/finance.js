@@ -195,6 +195,8 @@ export function buildTaxPosition(confirmed) {
   }
 
   return {
+    taxYear: TAX_DEMO.taxYear,
+    sourceUrl: TAX_DEMO.sourceUrl,
     basis: { start, end, days: TAX_DEMO.basisDays, transactionCount: basis.length },
     turnover: { period: round2(s.sales), annualised: round2(annualTurnover) },
     turnoverEstimate: {
@@ -217,4 +219,5 @@ export function buildTaxPosition(confirmed) {
     disclaimer: TAX_DEMO.disclaimer,
   };
 }
+
 
