@@ -8,12 +8,14 @@ export function AuthProvider({ children }) {
   const [status, setStatus] = useState('loading');
   const [isTeamMember, setIsTeamMember] = useState(false);
   const [businessProfile, setBusinessProfile] = useState(null);
+  const [profileComplete, setProfileComplete] = useState(false);
   const [accessError, setAccessError] = useState('');
 
   const checkAccess = useCallback(async (activeSession) => {
     if (!activeSession?.user) {
       setIsTeamMember(false);
       setBusinessProfile(null);
+      setProfileComplete(false);
       setAccessError('');
       setStatus('signed_out');
       return false;
@@ -29,6 +31,7 @@ export function AuthProvider({ children }) {
     if (accessCheckError || !member) {
       setIsTeamMember(false);
       setBusinessProfile(null);
+      setProfileComplete(false);
       setAccessError(accessCheckError ? 'Could not verify team access. Please try again.' : 'This email is not on the UnknownDevs access list.');
       setStatus('denied');
       return false;
@@ -45,7 +48,8 @@ export function AuthProvider({ children }) {
       return false;
     }
     setIsTeamMember(true);
-    setBusinessProfile(data?.completed ? data.profile : null);
+    setBusinessProfile(data?.profile || null);
+    setProfileComplete(Boolean(data?.completed));
     setAccessError('');
     setStatus('ready');
     return true;
@@ -73,6 +77,7 @@ export function AuthProvider({ children }) {
       if (!nextSession) {
         setIsTeamMember(false);
         setBusinessProfile(null);
+        setProfileComplete(false);
         setStatus('signed_out');
       }
     });
@@ -105,6 +110,7 @@ export function AuthProvider({ children }) {
     if (error) throw error;
     setSession(null);
     setBusinessProfile(null);
+    setProfileComplete(false);
     setIsTeamMember(false);
     setStatus('signed_out');
   }, []);
@@ -124,16 +130,20 @@ export function AuthProvider({ children }) {
     if (data.user) setSession((current) => current ? { ...current, user: data.user } : current);
   }, []);
 
-  const saveBusinessProfile = useCallback(async (profile) => {
+  const saveBusinessProfile = useCallback(async (profile, { completed = true, onboardingStep } = {}) => {
     if (!supabase || !session?.user) throw new Error('Your secure session has expired. Sign in again.');
+    const savedProfile = { ...profile };
+    if (completed) delete savedProfile.onboardingStep;
+    else if (Number.isInteger(onboardingStep)) savedProfile.onboardingStep = onboardingStep;
     const { error } = await supabase.from('business_profiles').upsert({
       user_id: session.user.id,
-      profile,
-      completed: true,
+      profile: savedProfile,
+      completed,
       updated_at: new Date().toISOString(),
     });
     if (error) throw error;
-    setBusinessProfile(profile);
+    setBusinessProfile(savedProfile);
+    setProfileComplete(completed);
   }, [session]);
 
   const value = useMemo(() => ({
@@ -142,6 +152,7 @@ export function AuthProvider({ children }) {
     status,
     isTeamMember,
     businessProfile,
+    profileComplete,
     accessError,
     signIn,
     signOut,
@@ -149,7 +160,7 @@ export function AuthProvider({ children }) {
     setAccountPassword,
     saveBusinessProfile,
     supabaseConfigured,
-  }), [session, status, isTeamMember, businessProfile, accessError, signIn, signOut, requestPasswordReset, setAccountPassword, saveBusinessProfile]);
+  }), [session, status, isTeamMember, businessProfile, profileComplete, accessError, signIn, signOut, requestPasswordReset, setAccountPassword, saveBusinessProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

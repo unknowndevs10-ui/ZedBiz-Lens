@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function WaveField({ speaking = false, className = '' }) {
+export default function WaveField({ speaking = false, animationEnabled = true, className = '' }) {
   const canvasRef = useRef(null);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -38,7 +38,7 @@ export default function WaveField({ speaking = false, className = '' }) {
       }
     };
     draw(0);
-    if (!reducedMotion) {
+    if (!reducedMotion && animationEnabled) {
       const animate = (time) => {
         draw(time);
         frame = window.requestAnimationFrame(animate);
@@ -46,7 +46,7 @@ export default function WaveField({ speaking = false, className = '' }) {
       frame = window.requestAnimationFrame(animate);
     }
     return () => window.cancelAnimationFrame(frame);
-  }, [speaking]);
+  }, [speaking, animationEnabled]);
   return <canvas ref={canvasRef} aria-hidden="true" className={`block h-36 w-full ${className}`} />;
 }
 

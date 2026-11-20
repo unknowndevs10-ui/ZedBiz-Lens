@@ -63,7 +63,6 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <WelcomeExperience ready={status === 'ready'} profile={businessProfile} openSignal={welcomeReplay} />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">YOUR BUSINESS, IN FOCUS</p>
@@ -75,6 +74,10 @@ export default function DashboardPage() {
           <Button icon={Plus} onClick={openAddEntry}>Add entry</Button>
         </div>
       </header>
+
+      <WelcomeExperience ready={status === 'ready'} profile={businessProfile} openSignal={welcomeReplay} />
+      <BusinessPulse signals={signals} onSpeak={speakSignals} speaking={speaking} />
+      {voiceError && <p role="status" className="mt-2 text-xs text-ink-muted">{voiceError}</p>}
 
       {(ledgerError || (status === 'error' && !ledgerError)) && <Card className="mt-5"><ErrorState title="Your ledger could not be loaded" description={ledgerError?.message || 'Check your connection and retry.'} onRetry={reload} /></Card>}
 
@@ -117,8 +120,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      <BusinessPulse signals={signals} onSpeak={speakSignals} speaking={speaking} />
-      {voiceError && <p role="status" className="mt-2 text-xs text-ink-muted">{voiceError}</p>}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-[#111819] px-4 py-3 text-xs text-ink-muted"><span className="inline-flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-brand-700" />Only records you confirm flow into your totals.</span><span>Account: {user?.email || 'UnknownDevs workspace'}</span></div>
     </div>
   );

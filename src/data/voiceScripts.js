@@ -18,3 +18,14 @@ export function buildWelcomeScript(profile = {}) {
   ].join('\n\n');
 }
 
+export function buildWelcomeSummary(profile = {}) {
+  const name = String(profile.displayName || '').trim();
+  const business = String(profile.businessName || '').trim();
+  return [
+    `Welcome${name ? `, ${name}` : ''} to ZedBiz Lens${business ? `, your business workspace for ${business}` : ''}.`,
+    'Record a sale or expense in your own words. ZedBiz prepares a draft, and you review and confirm it before it affects your totals.',
+    'Your dashboard shows confirmed activity and clear business signals to help you decide what to look at next. In this pilot, those signals use transparent rules; they do not make decisions or replace professional tax guidance.',
+    'Your business. Your numbers. Your next step. Every kwacha has a story. See the whole picture.',
+  ].join(' ');
+}
+

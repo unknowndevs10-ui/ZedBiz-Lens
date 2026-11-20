@@ -54,9 +54,11 @@ function ChoiceCards({ items, value, onChange, columns = 3 }) {
 export default function BusinessProfilePage() {
   const { businessProfile, saveBusinessProfile } = useData();
   const { toast } = useToast();
-  const { saveBusinessProfile: saveSecureBusinessProfile, businessProfile: securedProfile } = useAuth();
+  const { saveBusinessProfile: saveSecureBusinessProfile, businessProfile: securedProfile, profileComplete, signOut } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const initialStep = Number.isInteger(securedProfile?.onboardingStep) ? Math.min(Math.max(securedProfile.onboardingStep, 0), STEPS.length - 1) : 0;
+  const [step, setStep] = useState(initialStep);
+  const [showIntro, setShowIntro] = useState(() => !profileComplete && !securedProfile);
   const [form, setForm] = useState(() => ({ ...DEFAULT_FORM, ...(securedProfile || businessProfile || {}) }));
   const [saving, setSaving] = useState(false);
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
@@ -67,19 +69,42 @@ export default function BusinessProfilePage() {
     ? form.goals.filter((goal) => goal !== id)
     : [...form.goals, id]);
 
-  function next() {
+  async function next() {
     if (step === 0 && !form.displayName.trim()) return toast('Tell us what to call you before continuing.', { tone: 'warning' });
     if (step === 1 && !form.businessName.trim()) return toast('Add your business or trading name to continue.', { tone: 'warning' });
     if (step === 2 && !form.recordChannels.length) return toast('Choose at least one way you handle records.', { tone: 'warning' });
     if (step === 3 && !form.goals.length) return toast('Choose one goal so ZedBiz can shape your guidance.', { tone: 'warning' });
-    setStep((current) => Math.min(current + 1, STEPS.length - 1));
+    const nextStep = Math.min(step + 1, STEPS.length - 1);
+    setSaving(true);
+    try {
+      const cleanProfile = saveBusinessProfile({ ...form, onboardingStep: nextStep });
+      await saveSecureBusinessProfile(cleanProfile, { completed: profileComplete, onboardingStep: nextStep });
+      setStep(nextStep);
+    } catch (error) {
+      toast(error.message || 'We could not save this step. Check your connection and try again.', { tone: 'danger', title: 'Progress not saved' });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveAndSignOut() {
+    setSaving(true);
+    try {
+      const cleanProfile = saveBusinessProfile(form);
+      await saveSecureBusinessProfile(cleanProfile, { completed: false, onboardingStep: step });
+      await signOut();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      toast(error.message || 'We could not save your progress. Check your connection and try again.', { tone: 'danger', title: 'Progress not saved' });
+      setSaving(false);
+    }
   }
 
   async function finish() {
     setSaving(true);
     try {
       const cleanProfile = saveBusinessProfile(form);
-      await saveSecureBusinessProfile(cleanProfile);
+      await saveSecureBusinessProfile(cleanProfile, { completed: true });
       toast('Your profile is saved securely. Your clean ledger is ready.', { title: 'You are all set' });
       window.setTimeout(() => navigate('/app/dashboard'), 250);
     } catch (error) {
@@ -88,17 +113,41 @@ export default function BusinessProfilePage() {
     }
   }
 
+  if (showIntro) return (
+    <div className="mx-auto max-w-3xl py-5 sm:py-10">
+      <section aria-labelledby="business-intro-title" className="rounded-2xl border border-line bg-[#101718] p-5 shadow-card sm:p-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-brand-200 bg-brand-50 text-brand-700"><Sparkles className="h-6 w-6" /></div>
+          <p className="eyebrow mt-5">WELCOME TO YOUR ZEDBIZ WORKSPACE</p>
+          <h1 id="business-intro-title" className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Let's make your business easier to understand.</h1>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-muted">A few short questions will shape a workspace around the way you trade, the records you keep and what you want to improve.</p>
+        </div>
+
+        <div className="mx-auto mt-7 grid max-w-2xl gap-3">
+          <article className="flex items-start gap-3 rounded-xl border border-line bg-[#141d1e] p-4"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><WalletCards className="h-4 w-4" /></span><div><h2 className="text-sm font-extrabold">Built around your working day</h2><p className="mt-1 text-xs leading-5 text-ink-muted">Tell us how customers pay, what kind of business you run and what is hardest to manage.</p></div></article>
+          <article className="flex items-start gap-3 rounded-xl border border-line bg-[#141d1e] p-4"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><ShieldCheck className="h-4 w-4" /></span><div><h2 className="text-sm font-extrabold">You stay in control</h2><p className="mt-1 text-xs leading-5 text-ink-muted">Your entries remain drafts until you review and confirm them. Business signals explain the records behind each prompt.</p></div></article>
+          <article className="flex items-start gap-3 rounded-xl border border-line bg-[#141d1e] p-4"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><Sparkles className="h-4 w-4" /></span><div><h2 className="text-sm font-extrabold">Guidance that grows with your records</h2><p className="mt-1 text-xs leading-5 text-ink-muted">The pilot uses transparent rules to highlight patterns. It does not make decisions or determine your tax obligations.</p></div></article>
+        </div>
+
+        <div className="mt-7 flex flex-col items-center gap-3">
+          <Button size="lg" icon={ArrowRight} onClick={() => setShowIntro(false)}>Let's go</Button>
+          <p className="text-[11px] text-ink-muted">Six short steps � progress saves as you continue � you can sign out and resume</p>
+        </div>
+      </section>
+    </div>
+  );
+
   return (
     <div className="mx-auto max-w-4xl">
       <header className="mb-6">
         <p className="eyebrow">A better fit, from the first hello</p>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{step === 0 ? "Let's get to know you" : step === 5 ? 'Your business, your way' : "Let's get to know your business"}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">A few thoughtful steps help ZedBiz understand the way you trade, what matters to you and which patterns to watch. You can update these answers later.</p>
+        <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{profileComplete ? 'Your business profile' : step === 0 ? "Let's get to know you" : step === 5 ? 'Your business, your way' : "Let's get to know your business"}</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">{profileComplete ? 'Review your business details and update them as your work changes.' : 'A few thoughtful steps help ZedBiz understand the way you trade, what matters to you and which patterns to watch. Your progress saves as you continue, so you can sign out and pick up here later.'}</p>
       </header>
 
       <div className="mb-5 rounded-xl border border-line bg-[#101718] p-4 sm:p-5">
         <div className="mb-3 flex items-center justify-between gap-3"><span className="text-xs font-bold text-ink-muted">YOUR SETUP</span><span className="text-xs font-extrabold text-brand-700">Step {step + 1} of {STEPS.length} � {STEPS[step]}</span></div>
-        <div className="grid grid-cols-6 gap-2" aria-label={'Step ' + (step + 1) + ' of ' + STEPS.length}>{STEPS.map((name, index) => <div key={name} className={'h-1.5 rounded-full transition-colors duration-300 ' + (index <= step ? 'bg-brand' : 'bg-line')} />)}</div>
+        <div className="grid grid-cols-6 gap-2" role="progressbar" aria-label="Business setup progress" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1}>{STEPS.map((name, index) => <div key={name} aria-hidden="true" className={'h-1.5 rounded-full transition-colors duration-300 ' + (index <= step ? 'bg-brand' : 'bg-line')} />)}</div>
         <div className="mt-2 hidden grid-cols-6 text-[10px] font-semibold text-ink-muted sm:grid">{STEPS.map((name) => <span key={name}>{name}</span>)}</div>
       </div>
 
@@ -153,8 +202,11 @@ export default function BusinessProfilePage() {
           </section>}
         </div>
         <div className="flex items-center justify-between border-t border-line bg-[#0e1516] px-4 py-4 sm:px-7">
-          <Button variant="ghost" icon={ArrowLeft} onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0}>Back</Button>
-          {step < STEPS.length - 1 ? <Button icon={ArrowRight} onClick={next}>Continue</Button> : <Button icon={Check} loading={saving} onClick={finish}>Create my workspace</Button>}
+          <Button variant="ghost" icon={ArrowLeft} onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0 || saving}>Back</Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            {!profileComplete && <Button variant="secondary" onClick={saveAndSignOut} loading={saving}>Save and sign out</Button>}
+            {step < STEPS.length - 1 ? <Button icon={ArrowRight} onClick={next} loading={saving}>Continue</Button> : <Button icon={Check} loading={saving} onClick={finish}>{profileComplete ? 'Save profile' : 'Create my workspace'}</Button>}
+          </div>
         </div>
       </Card>
       <p className="mt-4 flex items-center gap-2 text-xs leading-5 text-ink-muted"><MapPin className="h-4 w-4 shrink-0" /> Your answers are saved to your team account and used to personalize your workspace.</p>

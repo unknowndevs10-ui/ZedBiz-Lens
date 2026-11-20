@@ -36,12 +36,12 @@ function AuthLinkRedirect() {
 }
 
 function RequireTeamAccess({ children }) {
-  const { user, status, isTeamMember, businessProfile } = useAuth();
+  const { user, status, isTeamMember, profileComplete } = useAuth();
   const location = useLocation();
   if (status === 'loading' || status === 'checking') return <main className="min-h-screen bg-[#0b1112] px-4 pt-16"><LoadingState label="Securing your workspace" /></main>;
   if (!user || status === 'signed_out' || status === 'unconfigured') return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   if (status === 'denied' || status === 'error' || !isTeamMember) return <Navigate to="/login?denied=1" replace />;
-  if (!businessProfile && location.pathname !== '/app/profile') return <Navigate to="/app/profile" replace />;
+  if (!profileComplete && location.pathname !== '/app/profile') return <Navigate to="/app/profile" replace />;
   return children;
 }
 
