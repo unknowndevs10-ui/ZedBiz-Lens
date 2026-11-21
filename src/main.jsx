@@ -7,7 +7,7 @@ import App from './App';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
-import { LoadingState } from './components/common/States';
+import LoadingScene from './components/common/LoadingScene';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -15,7 +15,7 @@ createRoot(document.getElementById('root')).render(
       <ToastProvider>
         <AuthProvider>
           <DataProvider>
-            <Suspense fallback={<LoadingState label="Preparing your workspace" />}>
+            <Suspense fallback={<LoadingScene label="Preparing your workspace" />}>
               <App />
             </Suspense>
           </DataProvider>
