@@ -278,7 +278,7 @@ export default function BusinessProfilePage() {
           </div>
         </div>
       </Card>
-      <p className="mt-4 flex items-center gap-2 text-xs leading-5 text-ink-muted"><MapPin className="h-4 w-4 shrink-0" /> Your answers are saved to your team account and used to personalize your workspace.</p>
+      <p className="mt-4 flex items-center gap-2 text-xs leading-5 text-ink-muted"><MapPin className="h-4 w-4 shrink-0" /> Your answers are saved to your account and used to personalize your workspace.</p>
       <p className="mt-2 flex items-center gap-2 text-xs text-ink-muted"><CircleHelp className="h-4 w-4 shrink-0" /> We only ask for business context. Do not enter TPINs, passwords, or payment account numbers here.</p>
     </div>
       </main>
