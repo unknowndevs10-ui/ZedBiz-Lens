@@ -6,7 +6,12 @@
     "tax_year": 2026,
     "effective_from": "2026-01-01",
     "last_verified": "2026-11-19",
-    "disclaimer": "Verify against current ZRA guidance and Practice Notes before filing. Rates and thresholds change with each national budget."
+    "disclaimer": "Verify against current ZRA guidance and Practice Notes before filing. Rates and thresholds change with each national budget.",
+    "sources": [
+      "https://www.zra.org.zm/tax-information/",
+      "https://www.zra.org.zm/wp-content/uploads/2025/08/An-Introduction-to-Value-Added-Tax.pdf",
+      "https://www.parliament.gov.zm/sites/default/files/documents/acts/Act%20No.%2010%20of%202025%20-%20The%20Income%20Tax%20%28Amendment%29-Act.pdf"
+    ]
   },
   "turnover_tax": {
     "annual_ceiling": 5000000,
@@ -17,6 +22,12 @@
       "total_turnover": "Rate applies to the ENTIRE turnover once turnover exceeds nil_band_upper (flat 5% of gross turnover, no nil band relief)."
     },
     "default_mode": "excess_only",
+    "eligibility": {
+      "excluded_legal_forms": ["partnership"],
+      "excluded_activities": ["consultancy", "management_consultancy", "mining", "public_service_vehicle_under_50"],
+      "voluntary_vat_registration_can_coexist": true,
+      "note": "Voluntary VAT registration does not by itself exclude turnover tax under current ZRA guidance. Other eligibility exclusions still apply."
+    },
     "bands": [
       {"name": "Nil band", "from": 0, "to": 30000, "rate": 0.0},
       {"name": "Turnover tax band", "from": 30000, "to": 5000000, "rate": 0.05}
@@ -33,13 +44,36 @@
     "standard_rate": 0.16,
     "registration_threshold_annual": 800000,
     "registration_threshold_quarterly": 200000,
+    "smart_invoice_required_from": "2025-01-01",
+    "input_invoice_validity_days": 90,
+    "input_vat_requires_smart_invoice_and_supplier_tpin": true,
     "quarterly_threshold_note": "Sources differ: some treat K200,000 in any 3 months as triggering mandatory registration; ZRA brochure places it under voluntary registration. Treated here as a warning trigger.",
     "voluntary_registration_floor": 400000,
     "registration_window_days": 30,
-    "overlap_note": "Businesses between K800,000 and K5,000,000 may need BOTH turnover tax and VAT registration."
+    "overlap_note": "ZRA guidance allows voluntary VAT registrants to file turnover tax; VAT and income tax regimes are separate obligations. Confirm eligibility."
+  },
+  "income_tax": {
+    "individual_annual_bands": [
+      {"up_to": 61200, "rate": 0.0},
+      {"up_to": 85200, "rate": 0.20},
+      {"up_to": 110400, "rate": 0.30},
+      {"up_to": null, "rate": 0.37}
+    ],
+    "corporate_rate": 0.30,
+    "agriculture_corporate_rate": 0.10,
+    "minimum_alternative_tax_rate": 0.01,
+    "minimum_alternative_tax_applies_to": ["income_tax_business"],
+    "minimum_alternative_tax_creditable": true,
+    "note": "MAT is a separate turnover floor and may be creditable against income tax under the applicable law; eligibility and computation require Finance review."
+  },
+  "accounting": {
+    "cogs_categories": ["Stock purchases", "Spoilage & wastage"],
+    "excluded_expense_categories": ["Owner personal withdrawal"],
+    "deductibility_requires_review_flag": true
   },
   "filing": {
     "turnover_tax_due_day_of_month": 14,
     "vat_return_due_day_of_month": 18
   }
 }
+

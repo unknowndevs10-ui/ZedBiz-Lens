@@ -1,15 +1,35 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { transactionService } from '../services/transactionService';
+import { parseBusinessWrapUp } from '../services/aiEngine';
+import { operationsStore } from '../services/operationsStore';
+import { config } from '../config';
+import { clearAgentEvents, setAgentLogScope } from '../services/agentLog';
+import { useAuth } from './AuthContext';
 
 const DataContext = createContext(null);
 const BUSINESS_KEY = 'zedbiz-lens:active-business';
+const PROFILE_KEY = 'zedbiz-lens:business-profile:v1';
+const scopedKey = (key, userId) => `${key}:${String(userId || 'guest').replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
-function readStoredBusiness() {
+function readStoredBusiness(userId) {
   try {
-    return localStorage.getItem(BUSINESS_KEY);
+    return localStorage.getItem(scopedKey(BUSINESS_KEY, userId));
   } catch {
     return null;
   }
+}
+
+function readStoredProfile(userId) {
+  try {
+    const profile = JSON.parse(localStorage.getItem(scopedKey(PROFILE_KEY, userId)) || 'null');
+    return profile && typeof profile === 'object' ? profile : null;
+  } catch {
+    return null;
+  }
+}
+
+function readInitialBusiness(userId) {
+  return readStoredBusiness(userId) || 'my-business';
 }
 
 /**
@@ -17,13 +37,28 @@ function readStoredBusiness() {
  * confirmed figure could have changed, so dashboards and tax views refetch.
  */
 export function DataProvider({ children }) {
+  const { user, businessProfile: cloudProfile } = useAuth();
+  const userId = user?.id || 'guest';
   const [businesses, setBusinesses] = useState([]);
-  const [businessId, setBusinessIdState] = useState(() => readStoredBusiness() || 'retail');
+  const [businessId, setBusinessIdState] = useState(() => readInitialBusiness(userId));
+  const [businessProfile, setBusinessProfileState] = useState(() => readStoredProfile(userId));
   const [transactions, setTransactions] = useState([]);
+  const [isSyntheticDemo, setIsSyntheticDemo] = useState(() => transactionService.isSyntheticDemoActive());
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [error, setError] = useState(null);
   const [version, setVersion] = useState(0);
   const requestRef = useRef(0);
+
+  useEffect(() => {
+    setIsSyntheticDemo(transactionService.setUserScope(userId));
+    setAgentLogScope(userId);
+    const profile = cloudProfile || readStoredProfile(userId);
+    if (cloudProfile) {
+      try { localStorage.setItem(scopedKey(PROFILE_KEY, userId), JSON.stringify(cloudProfile)); } catch { /* profile remains in memory */ }
+    }
+    setBusinessProfileState(profile);
+    setBusinessIdState(readStoredBusiness(userId) || 'my-business');
+  }, [userId, cloudProfile]);
 
   const load = useCallback(async () => {
     const request = ++requestRef.current;
@@ -44,7 +79,7 @@ export function DataProvider({ children }) {
       setError(err);
       setStatus('error');
     }
-  }, [businessId]);
+  }, [businessId, userId]);
 
   useEffect(() => {
     load();
@@ -52,52 +87,114 @@ export function DataProvider({ children }) {
 
   const setBusinessId = useCallback((id) => {
     try {
-      localStorage.setItem(BUSINESS_KEY, id);
+      localStorage.setItem(scopedKey(BUSINESS_KEY, userId), id);
     } catch {
       /* ignore */
     }
     setBusinessIdState(id);
-  }, []);
+  }, [userId]);
+
+  const saveBusinessProfile = useCallback((profile) => {
+    const clean = {
+      id: 'my-business',
+      displayName: String(profile.displayName || '').trim().slice(0, 50),
+      role: String(profile.role || 'Owner').slice(0, 24),
+      businessName: String(profile.businessName || '').trim().slice(0, 80),
+      businessType: String(profile.businessType || 'other').slice(0, 40),
+      businessFormality: ['informal', 'formalizing', 'registered'].includes(profile.businessFormality) ? profile.businessFormality : 'informal',
+      province: String(profile.province || '').slice(0, 32),
+      district: String(profile.district || '').trim().slice(0, 80),
+      location: String(profile.district || profile.province || profile.location || '').trim().slice(0, 80),
+      language: String(profile.language || 'English').slice(0, 24),
+      recordChannels: Array.isArray(profile.recordChannels) ? profile.recordChannels.filter((channel) => ['cash', 'mobile_money', 'credit'].includes(channel)) : ['cash'],
+      pacraStatus: profile.pacraStatus || 'unsure',
+      zraStatus: profile.zraStatus || 'unsure',
+      vatStatus: profile.vatStatus || 'unsure',
+      legalForm: ['sole_trader', 'registered_business_name', 'limited_company', 'partnership'].includes(profile.legalForm) ? profile.legalForm : '',
+      taxActivity: ['retail_trading', 'agriculture', 'services', 'consultancy', 'other'].includes(profile.taxActivity) ? profile.taxActivity : '',
+      vatRegistrationType: ['voluntary', 'statutory', 'unsure'].includes(profile.vatRegistrationType) ? profile.vatRegistrationType : 'unsure',
+      formalizationInterest: profile.formalizationInterest || 'unsure',
+      goals: Array.isArray(profile.goals) ? profile.goals.filter((goal) => ['records', 'profit', 'cashflow', 'tax_ready', 'growth'].includes(goal)) : ['records', 'profit'],
+      biggestChallenge: ['keeping_records', 'pricing', 'stock', 'cashflow', 'customer_credit', 'tax', 'growth'].includes(profile.biggestChallenge) ? profile.biggestChallenge : 'keeping_records',
+      operatingDaysPerWeek: String(Math.min(7, Math.max(1, Number(profile.operatingDaysPerWeek) || 6))),
+      updatedAt: new Date().toISOString(),
+    };
+    try { localStorage.setItem(scopedKey(PROFILE_KEY, userId), JSON.stringify(clean)); } catch { /* profile remains available in memory */ }
+    setBusinessProfileState(clean);
+    setBusinessId('my-business');
+    return clean;
+  }, [setBusinessId, userId]);
 
   const bump = useCallback(() => setVersion((v) => v + 1), []);
   const replaceOne = useCallback((tx) => setTransactions((list) => list.map((t) => (t.id === tx.id ? tx : t))), []);
 
   const submitEntry = useCallback(
     async (text) => {
-      const result = await transactionService.submitEntry({ businessId, text });
+      if (isSyntheticDemo) throw new Error('This is a read-only sample workspace. Return to your business ledger to add real entries.');
+      const parsed = await parseBusinessWrapUp(text, businessProfile);
+      if (parsed.kind === 'clarify') throw new Error(parsed.message || 'I need one more detail before creating a draft.');
+      const operationRecords = Array.isArray(parsed.operations) ? parsed.operations : [];
+      operationRecords.filter((operation) => operation.type === 'cash_count').forEach((operation) => {
+        operationsStore.saveCashClose(userId, businessId, { date: operation.date, opening: 0, actual: Number(operation.actual), savedAt: new Date().toISOString(), source: 'voice-or-text-note' });
+      });
+      if (!config.useMockData) {
+        const result = await transactionService.submitEntry({ businessId, text });
+        setTransactions((list) => [...result.transactions, ...list]);
+        return { ...result, operations: operationRecords, parsing: parsed };
+      }
+      const prepared = [];
+      for (const item of parsed.drafts || []) {
+        if (item.kind !== 'transaction' || !item.draft) continue;
+        const result = await transactionService.submitAgentDraft({ businessId, text: item.sourceText || text, draft: { ...item.draft, aiExplanation: item.explanation, aiSource: parsed.source, confidence: item.confidence ?? item.draft.confidence } });
+        prepared.push(...result.transactions);
+      }
+      if (!prepared.length && !operationRecords.length) throw new Error(parsed.unparsed?.[0]?.reason || 'I could not prepare a reviewable business draft.');
+      setTransactions((list) => [...prepared, ...list]);
+      return { entryId: prepared[0]?.entryId || `operations-${Date.now()}`, text, transactions: prepared, operations: operationRecords, parsing: parsed };
+    },
+    [businessId, businessProfile, userId, isSyntheticDemo],
+  );
+
+  const submitAgentDraft = useCallback(
+    async ({ text, draft }) => {
+      if (isSyntheticDemo) throw new Error('This is a read-only sample workspace. Return to your business ledger to add real entries.');
+      const result = await transactionService.submitAgentDraft({ businessId, text, draft });
       setTransactions((list) => [...result.transactions, ...list]);
       return result;
     },
-    [businessId],
+    [businessId, isSyntheticDemo],
   );
 
   const updateTransaction = useCallback(
     async (id, patch) => {
+      if (isSyntheticDemo) throw new Error('Sample records are read-only. Return to your business ledger to edit entries.');
       const tx = await transactionService.update(id, patch);
       replaceOne(tx);
       if (tx.status === 'confirmed') bump();
       return tx;
     },
-    [replaceOne, bump],
+    [replaceOne, bump, isSyntheticDemo],
   );
 
   const confirmTransaction = useCallback(
     async (id, patch) => {
+      if (isSyntheticDemo) throw new Error('Sample records are read-only. Return to your business ledger to confirm entries.');
       const tx = await transactionService.confirm(id, patch);
       replaceOne(tx);
       bump();
       return tx;
     },
-    [replaceOne, bump],
+    [replaceOne, bump, isSyntheticDemo],
   );
 
   const rejectTransaction = useCallback(
     async (id) => {
+      if (isSyntheticDemo) throw new Error('Sample records are read-only. Return to your business ledger to reject entries.');
       const tx = await transactionService.reject(id);
       replaceOne(tx);
       return tx;
     },
-    [replaceOne],
+    [replaceOne, isSyntheticDemo],
   );
 
   const resolveMany = useCallback(
@@ -110,16 +207,31 @@ export function DataProvider({ children }) {
   );
   const confirmMany = useCallback(
     async (ids) => {
-      const results = await resolveMany(ids, (id) => transactionService.confirm(id));
+      const results = await resolveMany(ids, (id) => confirmTransaction(id));
       bump();
       return results;
     },
-    [resolveMany, bump],
+    [resolveMany, confirmTransaction, bump],
   );
-  const rejectMany = useCallback((ids) => resolveMany(ids, (id) => transactionService.reject(id)), [resolveMany]);
+  const rejectMany = useCallback((ids) => resolveMany(ids, (id) => rejectTransaction(id)), [resolveMany, rejectTransaction]);
 
   const resetDemoData = useCallback(async () => {
     await transactionService.resetDemo();
+    clearAgentEvents();
+    await load();
+    bump();
+  }, [load, bump]);
+
+  const enterSyntheticDemo = useCallback(async (profileOverride) => {
+    await transactionService.enterSyntheticDemo({ businessId, profile: profileOverride || businessProfile || {} });
+    setIsSyntheticDemo(true);
+    await load();
+    bump();
+  }, [businessId, businessProfile, load, bump]);
+
+  const exitSyntheticDemo = useCallback(async () => {
+    await transactionService.exitSyntheticDemo();
+    setIsSyntheticDemo(false);
     await load();
     bump();
   }, [load, bump]);
@@ -129,23 +241,29 @@ export function DataProvider({ children }) {
     return {
       businesses,
       business: businesses.find((b) => b.id === businessId) || null,
+      businessProfile,
       businessId,
       setBusinessId,
+      saveBusinessProfile,
       transactions,
+      isSyntheticDemo,
       pendingCount,
       status,
       error,
       version,
       reload: load,
       submitEntry,
+      submitAgentDraft,
       updateTransaction,
       confirmTransaction,
       rejectTransaction,
       confirmMany,
       rejectMany,
       resetDemoData,
+      enterSyntheticDemo,
+      exitSyntheticDemo,
     };
-  }, [businesses, businessId, setBusinessId, transactions, status, error, version, load, submitEntry, updateTransaction, confirmTransaction, rejectTransaction, confirmMany, rejectMany, resetDemoData]);
+  }, [businesses, businessId, setBusinessId, businessProfile, saveBusinessProfile, transactions, isSyntheticDemo, status, error, version, load, submitEntry, submitAgentDraft, updateTransaction, confirmTransaction, rejectTransaction, confirmMany, rejectMany, resetDemoData, enterSyntheticDemo, exitSyntheticDemo]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
@@ -155,3 +273,4 @@ export function useData() {
   if (!ctx) throw new Error('useData must be used inside <DataProvider>');
   return ctx;
 }
+

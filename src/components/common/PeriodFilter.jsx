@@ -2,7 +2,7 @@ import { PERIODS } from '../../utils/finance';
 
 export default function PeriodFilter({ value, onChange, label = 'Time period' }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-md border border-line bg-white p-0.5 shadow-card">
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-md border border-line bg-[#121a1b] p-0.5 shadow-card">
       {PERIODS.map((p) => {
         const active = value === p.id;
         return (

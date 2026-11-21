@@ -49,7 +49,7 @@ export default function ReportCard({ icon: Icon, title, description, periodContr
           <p className="text-[13px] font-bold">Preview</p>
           <div className="flex gap-1.5">
             {illustrative && <Badge tone="amber">Illustrative</Badge>}
-            <Badge tone={previewError ? 'danger' : 'success'}>{previewError ? 'Unavailable' : 'Ready · demo'}</Badge>
+            <Badge tone={previewError ? 'danger' : 'success'}>{previewError ? 'Unavailable' : 'Ready'}</Badge>
           </div>
         </div>
         {previewLoading ? (
@@ -62,9 +62,10 @@ export default function ReportCard({ icon: Icon, title, description, periodContr
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3 sm:px-5">
-        <p className="text-xs text-ink-muted">PDF · demo layout, synthetic data</p>
+        <p className="text-xs text-ink-muted">PDF � built from your confirmed records</p>
         <Button icon={Download} loading={busy} disabled={previewLoading || Boolean(previewError)} onClick={handleDownload}>Download PDF</Button>
       </div>
     </Card>
   );
 }
+

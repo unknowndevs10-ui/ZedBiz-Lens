@@ -6,38 +6,38 @@ export default {
       colors: {
         // Approved brand palette
         brand: {
-          DEFAULT: '#1F6F6B', // Calm Teal (white text = 5.9:1)
-          50: '#EEF5F5',
-          100: '#DCEBEA',
-          200: '#B9D7D5',
+          DEFAULT: '#1F6F6B',
+          50: '#142322',
+          100: '#1D3231',
+          200: '#2A4A48',
           500: '#2A8681',
           600: '#1F6F6B',
-          700: '#195A57',
-          800: '#144643',
+          700: '#68B8B1',
+          800: '#A3D9D2',
         },
         accent: {
-          DEFAULT: '#E0A84B', // Amber - always pair with dark text
-          50: '#FBF3E3',
-          100: '#F6E4BF',
+          DEFAULT: '#E0A84B',
+          50: '#2B2417',
+          100: '#42331D',
           400: '#E6B867',
-          800: '#6E4A0C',
+          800: '#F1CD8D',
         },
-        surface: '#F2F6F6', // Background (text on it = 13.5:1)
+        surface: '#0B1011',
         ink: {
-          DEFAULT: '#1E2A2F',
-          muted: '#4F5E64',
+          DEFAULT: '#E7EFEE',
+          muted: '#A4B3B2',
         },
-        line: '#D9E3E4',
-        success: '#2E7D4F',
+        line: '#293638',
+        success: '#61C98B',
         warning: '#E0A84B',
-        danger: '#B83A3A',
+        danger: '#F08F89',
       },
       fontFamily: {
         sans: ['"Manrope Variable"', 'Manrope', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(30,42,47,0.05), 0 1px 1px rgba(30,42,47,0.03)',
-        pop: '0 16px 40px -12px rgba(30,42,47,0.28)',
+        card: '0 8px 28px rgba(0,0,0,0.18)',
+        pop: '0 18px 48px -12px rgba(0,0,0,0.62)',
       },
       keyframes: {
         sheet: {
@@ -52,3 +52,4 @@ export default {
   },
   plugins: [],
 };
+

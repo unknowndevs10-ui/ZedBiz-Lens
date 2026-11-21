@@ -6,7 +6,7 @@ const TONES = {
   above: { bar: 'bg-danger', text: 'Above threshold' },
 };
 
-/** Progress toward the (placeholder) VAT threshold. */
+/** Display a turnover indicator only; this is not a VAT registration decision. */
 export default function TaxProgress({ vat }) {
   const tone = TONES[vat.status];
   const pct = Math.min(vat.percent, 100);
@@ -22,13 +22,15 @@ export default function TaxProgress({ vat }) {
       </div>
       <div className="mt-1.5 flex justify-between text-[11px] font-semibold text-ink-muted">
         <span>K0</span>
-        <span style={{ marginLeft: '25%' }}>75% watch point</span>
+        <span style={{ marginLeft: '25%' }}>{vat.watchPointPercent}% demo watch point</span>
         <span>{formatKwacha(vat.threshold)}</span>
       </div>
       <p className="mt-4 text-sm text-ink-muted">
         Projected annual turnover is <span className="font-bold text-ink">{formatKwacha(vat.annualisedTurnover)}</span>.
-        {vat.remaining > 0 ? <> About <span className="font-bold text-ink">{formatKwacha(vat.remaining)}</span> remains before the placeholder threshold.</> : ' It is above the placeholder threshold.'}
+        {vat.remaining > 0 ? <> About <span className="font-bold text-ink">{formatKwacha(vat.remaining)}</span> remains before the reference threshold.</> : ' It is at or above the reference threshold.'}
       </p>
+      <p className="mt-2 text-xs text-ink-muted">This indicator uses recorded turnover. Registration depends on taxable supplies and applicable ZRA rules.</p>
     </div>
   );
 }
+

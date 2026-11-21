@@ -1,34 +1,45 @@
-// ---------------------------------------------------------------------------
-// PLACEHOLDER VALUES - every number here is an illustrative demo assumption.
-// They are NOT official Zambian tax rates or thresholds. Replace them with
-// values approved by the Finance team (or with live data from the backend).
-// ---------------------------------------------------------------------------
+import ZRA_TAX_RULES from '../../tax_rules.json';
+
+// One reference file drives the demo's tax scenarios. Values are shown for
+// learning only; activity eligibility and tax-base interpretation need review.
 export const TAX_DEMO = {
-  basisDays: 90, // estimates are built from the last 90 days of confirmed entries
-  vatThreshold: 600_000, // annual turnover, placeholder
-  turnoverBand: [0.02, 0.04], // placeholder low/high share of turnover
-  profitRate: 0.1, // placeholder share of net profit
-  vatRate: 0.12, // placeholder
+  basisDays: 90,
+  turnoverTax: {
+    annualCeiling: ZRA_TAX_RULES.turnover_tax.annual_ceiling,
+    annualNilBand: ZRA_TAX_RULES.turnover_tax.nil_band_upper,
+    monthlyNilBand: ZRA_TAX_RULES.turnover_tax.nil_band_upper / 12,
+    rate: ZRA_TAX_RULES.turnover_tax.rate,
+    modes: Object.keys(ZRA_TAX_RULES.turnover_tax.calculation_modes),
+  },
+  vat: {
+    standardRate: ZRA_TAX_RULES.vat.standard_rate,
+    annualThreshold: ZRA_TAX_RULES.vat.registration_threshold_annual,
+    voluntaryFloor: ZRA_TAX_RULES.vat.voluntary_registration_floor,
+    watchPointPercent: 80,
+  },
+  taxYear: ZRA_TAX_RULES.meta.tax_year,
+  sourceUrl: 'https://www.zra.org.zm/tax-information/',
   disclaimer:
-    'Illustrative demonstration only. Figures use placeholder assumptions pending Finance team approval. They are not official tax rates, tax advice or a compliance check.',
+    'Illustrative tax-readiness view using the linked ZRA reference rules. It is not a tax assessment or filing calculation. The turnover-tax base and business eligibility need Finance review. Income-tax liability and VAT payable are not calculated because the demo lacks reviewed tax profiles, supply classifications, and allowable input-tax records.',
   changes: [
     {
       id: 'threshold',
       title: 'If a regime threshold changes',
       body:
-        'A threshold change moves the point at which a business switches regime. ZedBiz Lens would redraw the progress bar from the new threshold. Your records would not change.',
+        'Thresholds come from the shared tax rules file. An approved update changes the progress indicator; it does not alter any saved business records.',
     },
     {
-      id: 'rate',
-      title: 'If a rate changes',
+      id: 'turnover-base',
+      title: 'Turnover tax base requires confirmation',
       body:
-        'Estimates read their rate assumptions from one configuration file, so approved rates can be updated in one place and every estimate refreshes.',
+        'The demo shows both the excess-only and full-turnover interpretations of the nil band. Finance must confirm the applicable treatment before an amount is selected.',
     },
     {
       id: 'records',
-      title: 'What stays the same',
+      title: 'Keep the source records reviewable',
       body:
-        'Confirmed, dated transactions are the basis of every estimate. Keeping entries confirmed is the most useful preparation before any change.',
+        'Confirmed, dated entries support the estimate. Income marked unsure remains included in the turnover indicator until a person reviews its tax label.',
     },
   ],
 };
+

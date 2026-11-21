@@ -6,19 +6,19 @@ export default function BusinessSwitcher({ compact = false }) {
   if (!businesses.length) return null;
   return (
     <div>
-      {!compact && <label htmlFor="business-switcher" className="mb-1.5 block text-xs font-semibold text-ink-muted">Demo business</label>}
+      {!compact && <label htmlFor="business-switcher" className="mb-1.5 block text-xs font-semibold text-ink-muted">Business</label>}
       <div className="relative">
         <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand" aria-hidden="true" />
         <select
           id="business-switcher"
-          aria-label="Demo business"
+          aria-label="Business"
           value={businessId}
           onChange={(e) => setBusinessId(e.target.value)}
           className={`field pl-9 pr-8 font-semibold ${compact ? 'h-10 text-sm' : 'h-11'}`}
         >
           {businesses.map((b) => (
             <option key={b.id} value={b.id}>
-              {b.name}
+              {b.profile ? `My business · ${b.name}` : `Sample · ${b.name}`}
             </option>
           ))}
         </select>

@@ -2,9 +2,9 @@ import { AlertTriangle, CheckCircle2, Info, XCircle, X } from 'lucide-react';
 
 const TONES = {
   info: { box: 'border-brand-200 bg-brand-50', icon: Info, iconClass: 'text-brand-700' },
-  success: { box: 'border-success/30 bg-white', icon: CheckCircle2, iconClass: 'text-success' },
+  success: { box: 'border-success/30 bg-[#121a1b]', icon: CheckCircle2, iconClass: 'text-success' },
   warning: { box: 'border-accent-100 bg-accent-50', icon: AlertTriangle, iconClass: 'text-accent-800' },
-  danger: { box: 'border-danger/30 bg-white', icon: XCircle, iconClass: 'text-danger' },
+  danger: { box: 'border-danger/30 bg-[#121a1b]', icon: XCircle, iconClass: 'text-danger' },
 };
 
 export default function Notification({ tone = 'info', title, children, onDismiss, className = '' }) {

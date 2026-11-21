@@ -1,25 +1,45 @@
 // Mock backend. Persists to localStorage so the demo survives refreshes.
 // Method names and return shapes mirror services/api.js - keep the two in step.
 import { config } from '../config';
-import { BUSINESSES, generateSeedTransactions } from '../data/mockData';
-import { addDays, diffDays, todayISO } from '../utils/format';
+import { todayISO } from '../utils/format';
 import { extractTransactions } from '../utils/mockExtraction';
-import { buildDashboard, buildTaxPosition } from '../utils/finance';
+import { buildDashboard } from '../utils/finance';
+import { calculateTaxReadiness } from './taxEngine';
 import { buildFinancialReportPdf, buildTaxReportPdf } from '../utils/reportPdf';
+import { chooseSyntheticBusiness, generateSeedTransactions } from '../data/mockData';
 
-const STORAGE_KEY = 'zedbiz-lens:demo-data:v1';
+const STORAGE_KEY = 'zedbiz-lens:business-ledger:v2';
+const PROFILE_KEY = 'zedbiz-lens:business-profile:v1';
+const SAMPLE_KEY = 'zedbiz-lens:synthetic-workspace:v1';
 const wait = (ms = config.mockLatencyMs) => new Promise((resolve) => setTimeout(resolve, ms));
 let cache = null;
+let storageScope = 'guest';
+let sampleMode = false;
+const scopedKey = (key) => `${key}:${storageScope}`;
 
-function seed() {
-  const transactions = [];
-  BUSINESSES.forEach((business) => transactions.push(...generateSeedTransactions(business)));
-  return { seededOn: todayISO(), transactions };
+function readSampleWorkspace() {
+  try {
+    const sample = JSON.parse(localStorage.getItem(scopedKey(SAMPLE_KEY)) || 'null');
+    return sample && Array.isArray(sample.transactions) ? sample : null;
+  } catch {
+    return null;
+  }
 }
+
+export function setMockStorageScope(userId = 'guest') {
+  const nextScope = String(userId || 'guest').replace(/[^a-zA-Z0-9_-]/g, '_');
+  if (storageScope === nextScope) return sampleMode;
+  storageScope = nextScope;
+  cache = null;
+  sampleMode = Boolean(readSampleWorkspace()?.active);
+  return sampleMode;
+}
+
+function seed() { return { transactions: [] }; }
 
 function persist(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(scopedKey(STORAGE_KEY), JSON.stringify(state));
   } catch {
     /* storage full or unavailable - the demo keeps working in memory */
   }
@@ -29,18 +49,16 @@ function load() {
   if (cache) return cache;
   let state = null;
   try {
-    state = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    state = JSON.parse(localStorage.getItem(scopedKey(STORAGE_KEY)) || 'null');
   } catch {
     state = null;
   }
   if (!state || !Array.isArray(state.transactions)) {
     state = seed();
     persist(state);
-  } else if (state.seededOn !== todayISO()) {
-    // Slide the synthetic history forward so the demo always ends today.
-    const shift = diffDays(todayISO(), state.seededOn);
-    state.transactions = state.transactions.map((tx) => (tx.synthetic ? { ...tx, date: addDays(tx.date, shift) } : tx));
-    state.seededOn = todayISO();
+  } else if (state.transactions.some((tx) => tx.synthetic || tx.businessId !== 'my-business')) {
+    // Hide the old shared demo ledgers while preserving records the owner entered.
+    state.transactions = state.transactions.filter((tx) => !tx.synthetic && tx.businessId === 'my-business');
     persist(state);
   }
   cache = state;
@@ -49,8 +67,31 @@ function load() {
 
 const findIndex = (state, id) => state.transactions.findIndex((tx) => tx.id === id);
 const forBusiness = (state, businessId) => state.transactions.filter((tx) => tx.businessId === businessId);
-const confirmedFor = (state, businessId) => forBusiness(state, businessId).filter((tx) => tx.status === 'confirmed');
-const businessById = (id) => BUSINESSES.find((b) => b.id === id) || BUSINESSES[0];
+function customBusiness() {
+  try {
+    const profile = JSON.parse(localStorage.getItem(scopedKey(PROFILE_KEY)) || 'null');
+    if (profile?.id === 'my-business' && profile.businessName) {
+      return { id: profile.id, name: profile.businessName, kind: profile.businessType, location: profile.district || profile.province || profile.location || 'Zambia', profile: true };
+    }
+  } catch { /* the demo still works if storage is unavailable */ }
+  return null;
+}
+
+function customBusinessProfile() {
+  try {
+    const profile = JSON.parse(localStorage.getItem(scopedKey(PROFILE_KEY)) || 'null');
+    return profile && typeof profile === 'object' ? profile : {};
+  } catch { return {}; }
+}
+
+const businessById = () => customBusiness() || { id: 'my-business', name: 'My business', kind: 'Business', location: 'Zambia' };
+const currentWorkspace = () => sampleMode ? readSampleWorkspace() : null;
+const currentTransactions = () => currentWorkspace()?.transactions || load().transactions;
+const currentBusiness = () => currentWorkspace()?.business || businessById();
+
+function requireRealWorkspace() {
+  if (sampleMode) throw new Error('Sample records are read-only. Return to your business ledger to add or change real entries.');
+}
 
 function validatePatch(patch = {}) {
   if (patch.amount !== undefined && !(Number(patch.amount) > 0)) throw new Error('Amount must be greater than zero.');
@@ -71,17 +112,44 @@ function applyChange(id, change) {
 }
 
 export const mockApi = {
+  isSyntheticDemoActive() { return sampleMode; },
+
+  async enterSyntheticDemo({ businessId = 'my-business', profile = {} } = {}) {
+    await wait(160);
+    const scenario = chooseSyntheticBusiness(profile);
+    const business = { ...scenario, id: businessId, synthetic: true };
+    const transactions = generateSeedTransactions(scenario, 120).map((transaction) => ({
+      ...transaction,
+      businessId,
+      id: `sample-${transaction.id}`,
+      synthetic: true,
+    }));
+    try {
+      localStorage.setItem(scopedKey(SAMPLE_KEY), JSON.stringify({ active: true, business, transactions }));
+    } catch {
+      throw new Error('The sample workspace could not be saved in this browser. Check available storage and try again.');
+    }
+    sampleMode = true;
+    return { business, transactionCount: transactions.length };
+  },
+
+  async exitSyntheticDemo() {
+    sampleMode = false;
+    try { localStorage.removeItem(scopedKey(SAMPLE_KEY)); } catch { /* in-memory exit still works */ }
+  },
+
   async listBusinesses() {
     await wait(120);
-    return BUSINESSES;
+    return [currentBusiness()];
   },
 
   async getTransactions({ businessId }) {
     await wait();
-    return forBusiness(load(), businessId);
+    return currentTransactions().filter((transaction) => transaction.businessId === businessId);
   },
 
   async submitEntry({ businessId, text }) {
+    requireRealWorkspace();
     await wait(700); // pretend something is being processed
     const trimmed = String(text || '').trim();
     if (trimmed.length < 3) throw new Error('Type a few words about what happened in your business.');
@@ -107,42 +175,96 @@ export const mockApi = {
     return { entryId, text: trimmed, transactions: created };
   },
 
+  async submitAgentDraft({ businessId, text, draft }) {
+    requireRealWorkspace();
+    await wait(180);
+    const source = String(text || '').trim();
+    const amount = Number(draft?.amount);
+    if (source.length < 3 || source.length > 500) throw new Error('The source note must be between 3 and 500 characters.');
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000_000_000) throw new Error('Enter an amount greater than zero.');
+    if (!['income', 'expense', 'owner_withdrawal'].includes(draft?.type)) throw new Error('The entry type is not supported.');
+    if (businessId !== 'my-business') throw new Error('Choose your business workspace first.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(draft?.date || '')) throw new Error('Choose a valid date.');
+    const state = load();
+    const entryId = `agent-${Date.now()}`;
+    const transaction = {
+      id: `${entryId}-1`,
+      entryId,
+      businessId,
+      type: draft.type,
+      category: String(draft.category || '').slice(0, 60) || (draft.type === 'income' ? 'Sales' : 'Other expenses'),
+      description: String(draft.description || source).slice(0, 80),
+      amount,
+      date: draft.date,
+      paymentMethod: ['cash', 'mobile_money', 'credit'].includes(draft.paymentMethod) ? draft.paymentMethod : 'unspecified',
+      reference: String(draft.reference || '').slice(0, 40),
+      counterparty: String(draft.counterparty || '').slice(0, 80),
+      jobName: String(draft.jobName || '').slice(0, 80),
+      feeAmount: Number.isFinite(Number(draft.feeAmount)) ? Math.max(0, Number(draft.feeAmount)) : null,
+      itemName: String(draft.itemName || '').slice(0, 80),
+      unitCost: Number.isFinite(Number(draft.unitCost)) ? Math.max(0, Number(draft.unitCost)) : null,
+      quantity: Number.isFinite(Number(draft.quantity)) ? Math.max(0, Number(draft.quantity)) : null,
+      vatTreatment: ['standard_rated', 'zero_rated', 'exempt', 'out_of_scope', 'unsure'].includes(draft.vatTreatment) ? draft.vatTreatment : 'unsure',
+      amountIncludesVat: draft.amountIncludesVat !== false,
+      taxDeductible: typeof draft.taxDeductible === 'boolean' ? draft.taxDeductible : null,
+      smartInvoiceValid: draft.smartInvoiceValid === true,
+      supplierTpinVerified: draft.supplierTpinVerified === true,
+      inputVatAmount: Number.isFinite(Number(draft.inputVatAmount)) ? Math.max(0, Number(draft.inputVatAmount)) : null,
+      inputInvoiceDate: /^\d{4}-\d{2}-\d{2}$/.test(draft.inputInvoiceDate || '') ? draft.inputInvoiceDate : null,
+      createdBy: String(draft.createdBy || 'owner').slice(0, 80),
+      aiExplanation: String(draft.aiExplanation || '').slice(0, 220),
+      aiSource: String(draft.aiSource || '').slice(0, 60),
+      confidence: Number.isFinite(Number(draft.confidence)) ? Math.min(1, Math.max(0, Number(draft.confidence))) : null,
+      status: 'pending',
+      source,
+      synthetic: false,
+      ...(draft.type === 'income' ? { taxable: 'unsure', taxReason: 'Review tax treatment before using this record.' } : {}),
+      createdAt: new Date().toISOString(),
+    };
+    state.transactions.push(transaction);
+    persist(state);
+    return { entryId, text: source, transactions: [transaction] };
+  },
+
   async updateTransaction(id, patch) {
+    requireRealWorkspace();
     await wait(200);
     return applyChange(id, patch);
   },
 
   async confirmTransaction(id, patch = {}) {
+    requireRealWorkspace();
     await wait(200);
     return applyChange(id, { ...patch, status: 'confirmed', confirmedAt: new Date().toISOString() });
   },
 
   async rejectTransaction(id) {
+    requireRealWorkspace();
     await wait(200);
     return applyChange(id, { status: 'rejected' });
   },
 
   async getDashboard({ businessId, period }) {
     await wait();
-    return buildDashboard(confirmedFor(load(), businessId), period);
+    return buildDashboard(currentTransactions().filter((transaction) => transaction.businessId === businessId && transaction.status === 'confirmed'), period);
   },
 
   async getTaxPosition({ businessId }) {
     await wait();
-    return buildTaxPosition(confirmedFor(load(), businessId));
+    return calculateTaxReadiness(currentTransactions().filter((transaction) => transaction.businessId === businessId), customBusinessProfile());
   },
 
   async downloadFinancialReport({ businessId, period }) {
     await wait(600);
-    const business = businessById(businessId);
-    const dashboard = buildDashboard(confirmedFor(load(), businessId), period);
+    const business = currentBusiness();
+    const dashboard = buildDashboard(currentTransactions().filter((transaction) => transaction.businessId === businessId && transaction.status === 'confirmed'), period);
     return { blob: buildFinancialReportPdf(business, dashboard), filename: `zedbiz-financial-report-${business.id}-${period}.pdf` };
   },
 
   async downloadTaxReport({ businessId }) {
     await wait(600);
-    const business = businessById(businessId);
-    const tax = buildTaxPosition(confirmedFor(load(), businessId));
+    const business = currentBusiness();
+    const tax = calculateTaxReadiness(currentTransactions().filter((transaction) => transaction.businessId === businessId), customBusinessProfile());
     return { blob: buildTaxReportPdf(business, tax), filename: `zedbiz-tax-position-${business.id}.pdf` };
   },
 
@@ -152,3 +274,4 @@ export const mockApi = {
     persist(cache);
   },
 };
+

@@ -16,7 +16,7 @@ function Amount({ tx }) {
 }
 
 /** Table on md+, stacked rows on phones (no horizontal scrolling). */
-export default function TransactionTable({ transactions, onEdit }) {
+export default function TransactionTable({ transactions, onEdit, readOnly = false }) {
   return (
     <>
       <table className="hidden w-full text-left text-sm md:table">
@@ -39,7 +39,7 @@ export default function TransactionTable({ transactions, onEdit }) {
               <td className="px-3 py-3"><Badge tone={STATUS_TONE[tx.status]}>{STATUS_LABEL[tx.status]}</Badge></td>
               <td className="px-3 py-3 text-right"><Amount tx={tx} /></td>
               <td className="px-5 py-3 text-right">
-                {tx.status !== 'rejected' && (
+                {!readOnly && tx.status !== 'rejected' && (
                   <Button size="sm" variant="ghost" icon={Pencil} onClick={() => onEdit(tx)} aria-label={`Edit ${tx.description}`}>Edit</Button>
                 )}
               </td>
@@ -57,11 +57,11 @@ export default function TransactionTable({ transactions, onEdit }) {
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-muted">
               <span>{formatDate(tx.date)}</span>
-              <span aria-hidden="true">·</span>
+              <span aria-hidden="true">�</span>
               <span>{tx.category}</span>
               <Badge tone={STATUS_TONE[tx.status]} className="ml-auto">{STATUS_LABEL[tx.status]}</Badge>
             </div>
-            {tx.status !== 'rejected' && (
+            {!readOnly && tx.status !== 'rejected' && (
               <Button size="sm" variant="secondary" icon={Pencil} className="mt-2.5" onClick={() => onEdit(tx)}>Edit</Button>
             )}
           </li>
@@ -70,3 +70,4 @@ export default function TransactionTable({ transactions, onEdit }) {
     </>
   );
 }
+

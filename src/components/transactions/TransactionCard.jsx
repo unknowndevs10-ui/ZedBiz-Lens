@@ -21,7 +21,7 @@ export default function TransactionCard({ transaction, onConfirm, onEdit, onReje
   }
 
   return (
-    <article className="flex flex-col rounded-lg border border-line bg-white p-4 shadow-card" aria-label={`${transaction.description}, ${formatKwacha(transaction.amount)}`}>
+    <article className="flex flex-col rounded-lg border border-line bg-[#121a1b] p-4 shadow-card" aria-label={`${transaction.description}, ${formatKwacha(transaction.amount)}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge tone={isIncome ? 'success' : 'neutral'}>{isIncome ? 'Income' : 'Expense'}</Badge>
