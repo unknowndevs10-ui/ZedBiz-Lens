@@ -133,8 +133,13 @@ export function AuthProvider({ children }) {
   const saveBusinessProfile = useCallback(async (profile, { completed = true, onboardingStep } = {}) => {
     if (!supabase || !session?.user) throw new Error('Your secure session has expired. Sign in again.');
     const savedProfile = { ...profile };
-    if (completed) delete savedProfile.onboardingStep;
-    else if (Number.isInteger(onboardingStep)) savedProfile.onboardingStep = onboardingStep;
+    if (completed) {
+      delete savedProfile.onboardingStep;
+      delete savedProfile.onboardingVersion;
+    } else {
+      savedProfile.onboardingVersion = 2;
+      if (Number.isInteger(onboardingStep)) savedProfile.onboardingStep = onboardingStep;
+    }
     const { error } = await supabase.from('business_profiles').upsert({
       user_id: session.user.id,
       profile: savedProfile,

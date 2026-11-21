@@ -16,23 +16,38 @@ export const BUSINESSES = [
   {
     id: 'retail',
     name: 'Kabwe Road Mini-Mart',
-    kind: 'Small retail shop',
+    kind: 'Formal small retail shop',
+    businessFormality: 'registered',
+    scenario: 'formal_shop',
     location: 'Lusaka',
     summary: 'Groceries and household goods with weekly wholesale restocking.',
   },
   {
     id: 'salon',
     name: 'Glow Hair Studio',
-    kind: 'Hair salon',
+    kind: 'Small service business',
+    businessFormality: 'formalizing',
+    scenario: 'service_microbusiness',
     location: 'Kitwe',
     summary: 'Braiding and styling with regular product purchases.',
   },
   {
     id: 'market',
     name: 'Soweto Stall 14',
-    kind: 'Market trader',
+    kind: 'Informal tomato and produce trader',
+    businessFormality: 'informal',
+    scenario: 'tomato_trader',
     location: 'Lusaka',
-    summary: 'Fresh produce sold daily, with market fees and transport costs.',
+    summary: 'Tomatoes and fresh produce bought in small lots and sold daily, with market fees and transport costs.',
+  },
+  {
+    id: 'solar-sme',
+    name: 'Mosi Solar & Electrical Services',
+    kind: 'Profitable private-sector SME',
+    businessFormality: 'registered',
+    scenario: 'private_sector_profit',
+    location: 'Ndola',
+    summary: 'A formal service firm with installation jobs, inventory, staff and recurring operating costs.',
   },
 ];
 
@@ -58,6 +73,14 @@ const RULES = {
     { type: 'expense', category: 'Stock purchases', description: 'Produce from farm gate', range: [900, 1600], every: 'weekly', dow: [2, 5] },
     { type: 'expense', category: 'Transport', description: 'Bus fare and carrying', range: [60, 150], every: 'weekly', dow: [1, 3, 5], step: 5 },
     { type: 'expense', category: 'Market fees', description: 'Daily market levy', range: [20, 40], every: 'daily', p: 0.85, step: 5 },
+  ],
+  'solar-sme': [
+    { type: 'income', category: 'Services', description: ['Solar installation job', 'Electrical repair and call-out', 'Solar maintenance contract'], range: [5500, 11500], every: 'weekly', dow: [1, 3, 5], step: 50 },
+    { type: 'expense', category: 'Stock purchases', description: 'Panels, batteries and electrical supplies', range: [9000, 14000], every: 'weekly', dow: 2, step: 100 },
+    { type: 'expense', category: 'Transport', description: 'Fuel and site transport', range: [450, 850], every: 'weekly', dow: [1, 3, 5], step: 50 },
+    { type: 'expense', category: 'Rent', description: 'Workshop and office rent', range: [6000, 6000], every: 'monthly', dom: 1 },
+    { type: 'expense', category: 'Utilities', description: 'Workshop electricity and data', range: [1500, 2500], every: 'monthly', dom: 12, step: 100 },
+    { type: 'expense', category: 'Wages', description: 'Technician and installer wages', range: [12000, 12000], every: 'monthly', dom: 28 },
   ],
 };
 
@@ -129,3 +152,4 @@ export function generateSeedTransactions(business, days = 120) {
   }
   return transactions;
 }
+

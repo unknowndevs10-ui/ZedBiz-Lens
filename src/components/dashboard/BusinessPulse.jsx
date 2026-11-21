@@ -26,11 +26,14 @@ export default function BusinessPulse({ signals, onSpeak, speaking }) {
           </div>
           <p className="mt-3 border-t border-line/70 pt-3 text-[10px] font-semibold text-ink-muted">{priority.evidence}</p>
         </article>}
-        {supporting.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{supporting.map((signal) => <article key={signal.id} className={`rounded-xl border p-4 ${TONES[signal.tone] || TONES.teal}`}>
+        {supporting.length > 0 && <details className="rounded-xl border border-line bg-[#0e1516]">
+          <summary className="cursor-pointer px-4 py-3 text-xs font-extrabold text-ink-muted hover:text-ink">Show {supporting.length} more {supporting.length === 1 ? 'signal' : 'signals'}</summary>
+          <div className="grid gap-3 border-t border-line p-3 sm:grid-cols-2">{supporting.map((signal) => <article key={signal.id} className={`rounded-xl border p-4 ${TONES[signal.tone] || TONES.teal}`}>
           <div className="flex items-start justify-between gap-3"><h3 className="text-sm font-extrabold leading-5">{signal.title}</h3><Info className="h-4 w-4 shrink-0 text-accent-800" /></div>
           <p className="mt-2 text-xs leading-5 text-ink-muted">{signal.body}</p>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line/70 pt-3"><span className="text-[10px] font-semibold text-ink-muted">{signal.evidence}</span><Link to={signal.href} className="inline-flex shrink-0 items-center gap-1 text-[11px] font-extrabold text-brand-700 hover:underline focus-ring">{signal.action}<ArrowRight className="h-3 w-3" /></Link></div>
-        </article>)}</div>}
+          </article>)}</div>
+        </details>}
       </div>
       <p className="border-t border-line px-4 py-3 text-[11px] leading-5 text-ink-muted sm:px-5">These are explainable patterns from records you confirmed and the business context you chose. They are prompts for review, not decisions or tax advice.</p>
     </section>
