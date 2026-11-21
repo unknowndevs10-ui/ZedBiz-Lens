@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import Logo from '../common/Logo';
 
 export default function Footer({ compact = false }) {
-  if (compact) return <footer className="mt-12 border-t border-line pt-5 text-xs text-ink-muted"><p>ZedBiz Lens pilot. Your profile is linked to your team account; transaction records currently stay in this browser. Tax indicators are illustrative.</p></footer>;
+  if (compact) return <footer className="mt-12 border-t border-line pt-5 text-xs text-ink-muted"><p>ZedBiz Lens pilot. Your profile is linked to your account; transaction records currently stay in this browser. Tax indicators are illustrative.</p></footer>;
   return (
     <footer className="border-t border-line bg-[#121a1b]">
       <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 sm:px-8 md:grid-cols-12">
