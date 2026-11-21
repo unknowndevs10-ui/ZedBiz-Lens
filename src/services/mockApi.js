@@ -5,19 +5,33 @@ import { todayISO } from '../utils/format';
 import { extractTransactions } from '../utils/mockExtraction';
 import { buildDashboard, buildTaxPosition } from '../utils/finance';
 import { buildFinancialReportPdf, buildTaxReportPdf } from '../utils/reportPdf';
+import { chooseSyntheticBusiness, generateSeedTransactions } from '../data/mockData';
 
 const STORAGE_KEY = 'zedbiz-lens:business-ledger:v2';
 const PROFILE_KEY = 'zedbiz-lens:business-profile:v1';
+const SAMPLE_KEY = 'zedbiz-lens:synthetic-workspace:v1';
 const wait = (ms = config.mockLatencyMs) => new Promise((resolve) => setTimeout(resolve, ms));
 let cache = null;
 let storageScope = 'guest';
+let sampleMode = false;
 const scopedKey = (key) => `${key}:${storageScope}`;
+
+function readSampleWorkspace() {
+  try {
+    const sample = JSON.parse(localStorage.getItem(scopedKey(SAMPLE_KEY)) || 'null');
+    return sample && Array.isArray(sample.transactions) ? sample : null;
+  } catch {
+    return null;
+  }
+}
 
 export function setMockStorageScope(userId = 'guest') {
   const nextScope = String(userId || 'guest').replace(/[^a-zA-Z0-9_-]/g, '_');
-  if (storageScope === nextScope) return;
+  if (storageScope === nextScope) return sampleMode;
   storageScope = nextScope;
   cache = null;
+  sampleMode = Boolean(readSampleWorkspace()?.active);
+  return sampleMode;
 }
 
 function seed() { return { transactions: [] }; }
@@ -52,7 +66,6 @@ function load() {
 
 const findIndex = (state, id) => state.transactions.findIndex((tx) => tx.id === id);
 const forBusiness = (state, businessId) => state.transactions.filter((tx) => tx.businessId === businessId);
-const confirmedFor = (state, businessId) => forBusiness(state, businessId).filter((tx) => tx.status === 'confirmed');
 function customBusiness() {
   try {
     const profile = JSON.parse(localStorage.getItem(scopedKey(PROFILE_KEY)) || 'null');
@@ -64,6 +77,13 @@ function customBusiness() {
 }
 
 const businessById = () => customBusiness() || { id: 'my-business', name: 'My business', kind: 'Business', location: 'Zambia' };
+const currentWorkspace = () => sampleMode ? readSampleWorkspace() : null;
+const currentTransactions = () => currentWorkspace()?.transactions || load().transactions;
+const currentBusiness = () => currentWorkspace()?.business || businessById();
+
+function requireRealWorkspace() {
+  if (sampleMode) throw new Error('Sample records are read-only. Return to your business ledger to add or change real entries.');
+}
 
 function validatePatch(patch = {}) {
   if (patch.amount !== undefined && !(Number(patch.amount) > 0)) throw new Error('Amount must be greater than zero.');
@@ -84,17 +104,44 @@ function applyChange(id, change) {
 }
 
 export const mockApi = {
+  isSyntheticDemoActive() { return sampleMode; },
+
+  async enterSyntheticDemo({ businessId = 'my-business', profile = {} } = {}) {
+    await wait(160);
+    const scenario = chooseSyntheticBusiness(profile);
+    const business = { ...scenario, id: businessId, synthetic: true };
+    const transactions = generateSeedTransactions(scenario, 120).map((transaction) => ({
+      ...transaction,
+      businessId,
+      id: `sample-${transaction.id}`,
+      synthetic: true,
+    }));
+    try {
+      localStorage.setItem(scopedKey(SAMPLE_KEY), JSON.stringify({ active: true, business, transactions }));
+    } catch {
+      throw new Error('The sample workspace could not be saved in this browser. Check available storage and try again.');
+    }
+    sampleMode = true;
+    return { business, transactionCount: transactions.length };
+  },
+
+  async exitSyntheticDemo() {
+    sampleMode = false;
+    try { localStorage.removeItem(scopedKey(SAMPLE_KEY)); } catch { /* in-memory exit still works */ }
+  },
+
   async listBusinesses() {
     await wait(120);
-    return [businessById()];
+    return [currentBusiness()];
   },
 
   async getTransactions({ businessId }) {
     await wait();
-    return forBusiness(load(), businessId);
+    return currentTransactions().filter((transaction) => transaction.businessId === businessId);
   },
 
   async submitEntry({ businessId, text }) {
+    requireRealWorkspace();
     await wait(700); // pretend something is being processed
     const trimmed = String(text || '').trim();
     if (trimmed.length < 3) throw new Error('Type a few words about what happened in your business.');
@@ -121,6 +168,7 @@ export const mockApi = {
   },
 
   async submitAgentDraft({ businessId, text, draft }) {
+    requireRealWorkspace();
     await wait(180);
     const source = String(text || '').trim();
     const amount = Number(draft?.amount);
@@ -153,41 +201,44 @@ export const mockApi = {
   },
 
   async updateTransaction(id, patch) {
+    requireRealWorkspace();
     await wait(200);
     return applyChange(id, patch);
   },
 
   async confirmTransaction(id, patch = {}) {
+    requireRealWorkspace();
     await wait(200);
     return applyChange(id, { ...patch, status: 'confirmed', confirmedAt: new Date().toISOString() });
   },
 
   async rejectTransaction(id) {
+    requireRealWorkspace();
     await wait(200);
     return applyChange(id, { status: 'rejected' });
   },
 
   async getDashboard({ businessId, period }) {
     await wait();
-    return buildDashboard(confirmedFor(load(), businessId), period);
+    return buildDashboard(currentTransactions().filter((transaction) => transaction.businessId === businessId && transaction.status === 'confirmed'), period);
   },
 
   async getTaxPosition({ businessId }) {
     await wait();
-    return buildTaxPosition(confirmedFor(load(), businessId));
+    return buildTaxPosition(currentTransactions().filter((transaction) => transaction.businessId === businessId && transaction.status === 'confirmed'));
   },
 
   async downloadFinancialReport({ businessId, period }) {
     await wait(600);
-    const business = businessById(businessId);
-    const dashboard = buildDashboard(confirmedFor(load(), businessId), period);
+    const business = currentBusiness();
+    const dashboard = buildDashboard(currentTransactions().filter((transaction) => transaction.businessId === businessId && transaction.status === 'confirmed'), period);
     return { blob: buildFinancialReportPdf(business, dashboard), filename: `zedbiz-financial-report-${business.id}-${period}.pdf` };
   },
 
   async downloadTaxReport({ businessId }) {
     await wait(600);
-    const business = businessById(businessId);
-    const tax = buildTaxPosition(confirmedFor(load(), businessId));
+    const business = currentBusiness();
+    const tax = buildTaxPosition(currentTransactions().filter((transaction) => transaction.businessId === businessId && transaction.status === 'confirmed'));
     return { blob: buildTaxReportPdf(business, tax), filename: `zedbiz-tax-position-${business.id}.pdf` };
   },
 
