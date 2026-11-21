@@ -5,7 +5,7 @@ import LoginPage from './pages/LoginPage';
 import AppShell from './components/layout/AppShell';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
-import { LoadingState } from './components/common/States';
+import LoadingScene from './components/common/LoadingScene';
 
 // Heavy pages (charts) load on demand to keep the first paint light.
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -38,7 +38,7 @@ function AuthLinkRedirect() {
 function RequireTeamAccess({ children }) {
   const { user, status, isTeamMember, profileComplete } = useAuth();
   const location = useLocation();
-  if (status === 'loading' || status === 'checking') return <main className="min-h-screen bg-[#0b1112] px-4 pt-16"><LoadingState label="Securing your workspace" /></main>;
+  if (status === 'loading' || status === 'checking') return <LoadingScene label="Securing your workspace" />;
   if (!user || status === 'signed_out' || status === 'unconfigured') return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   if (status === 'denied' || status === 'error' || !isTeamMember) return <Navigate to="/login?denied=1" replace />;
   if (!profileComplete && location.pathname !== '/app/profile') return <Navigate to="/app/profile" replace />;
