@@ -14,6 +14,7 @@ import BusinessPulse from '../components/dashboard/BusinessPulse';
 import WelcomeExperience from '../components/dashboard/WelcomeExperience';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { useAsync } from '../hooks/useAsync';
 import { insightsService } from '../services/insightsService';
 import { buildBusinessSignals } from '../services/businessBrain';
@@ -28,12 +29,14 @@ const TAX_STATUS = [
 
 export default function DashboardPage() {
   const { openAddEntry } = useOutletContext();
-  const { businessId, business, businessProfile, transactions, status, error: ledgerError, reload, version } = useData();
+  const { businessId, business, businessProfile, transactions, status, error: ledgerError, reload, version, isSyntheticDemo, enterSyntheticDemo } = useData();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [period, setPeriod] = useState('30d');
   const [speaking, setSpeaking] = useState(false);
   const [welcomeReplay, setWelcomeReplay] = useState(0);
   const [voiceError, setVoiceError] = useState('');
+  const [loadingSample, setLoadingSample] = useState(false);
   const { data, loading, error, reload: reloadDashboard } = useAsync(
     () => insightsService.getDashboard({ businessId, period }),
     [businessId, period, version],
@@ -61,6 +64,18 @@ export default function DashboardPage() {
     }
   }
 
+  async function openSampleWorkspace() {
+    setLoadingSample(true);
+    try {
+      await enterSyntheticDemo();
+      toast('A synthetic, read-only sample workspace is ready.');
+    } catch (cause) {
+      toast(cause.message || 'The sample workspace could not be opened.', { tone: 'danger', title: 'Sample unavailable' });
+    } finally {
+      setLoadingSample(false);
+    }
+  }
+
   return (
     <div>
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -71,7 +86,8 @@ export default function DashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" icon={Sparkles} onClick={() => setWelcomeReplay((value) => value + 1)}>Welcome guide</Button>
-          <Button icon={Plus} onClick={openAddEntry}>Add entry</Button>
+          {!isSyntheticDemo && <Button variant="secondary" icon={Sparkles} loading={loadingSample} onClick={openSampleWorkspace}>Explore synthetic demo</Button>}
+          {!isSyntheticDemo && <Button icon={Plus} onClick={openAddEntry}>Add entry</Button>}
         </div>
       </header>
 
@@ -106,7 +122,7 @@ export default function DashboardPage() {
       {data && data.transactionCount > 0 && <><BusinessPulse signals={signals} onSpeak={speakSignals} speaking={speaking} />{voiceError && <p role="status" className="mt-2 text-xs text-ink-muted">{voiceError}</p>}</>}
 
       {data && !loading && data.transactionCount === 0 ? (
-        <Card className="mt-6"><EmptyState icon={ClipboardList} title="Your ledger is ready for its first real entry" description="Add a sale or expense from your business. It will appear as a draft for your review and only count after you confirm it." action={<Button icon={Plus} onClick={openAddEntry}>Add your first entry</Button>} /></Card>
+        <Card className="mt-6"><EmptyState icon={ClipboardList} title="Your ledger is ready for its first entry" description="Add a real sale or expense to begin. To explore the app with populated sample records, choose Explore synthetic demo above; those records stay separate from your ledger." action={<Button icon={Plus} onClick={openAddEntry}>Add your first entry</Button>} /></Card>
       ) : data && (
         <>
           <section className="mt-6 grid gap-6 xl:grid-cols-5" aria-label="Performance and costs">
