@@ -6,6 +6,8 @@ import AppShell from './components/layout/AppShell';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
 import LoadingScene from './components/common/LoadingScene';
+import { useData } from './context/DataContext';
+import DemoLaunch from './pages/DemoLaunch';
 
 // Heavy pages (charts) load on demand to keep the first paint light.
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -14,6 +16,9 @@ const TaxPage = lazy(() => import('./pages/TaxPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const BusinessProfilePage = lazy(() => import('./pages/BusinessProfilePage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
+const BoundariesPage = lazy(() => import('./pages/BoundariesPage'));
+const CapturePage = lazy(() => import('./pages/CapturePage'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -37,8 +42,10 @@ function AuthLinkRedirect() {
 
 function RequireAccountAccess({ children }) {
   const { user, status, profileComplete } = useAuth();
+  const { isSyntheticDemo } = useData();
   const location = useLocation();
   if (status === 'loading' || status === 'checking') return <LoadingScene label="Securing your workspace" />;
+  if (isSyntheticDemo) return children;
   if (!user || status === 'signed_out' || status === 'unconfigured') return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   if (status === 'error') return <Navigate to="/login?error=profile" replace />;
   if (!profileComplete && location.pathname !== '/app/profile') return <Navigate to="/app/profile" replace />;
@@ -52,12 +59,17 @@ export default function App() {
       <AuthLinkRedirect />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
+        <Route path="/boundaries" element={<BoundariesPage />} />
+        <Route path="/scope" element={<BoundariesPage />} />
+        <Route path="/demo/:scenario" element={<DemoLaunch />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/workspace" element={<Navigate to="/app/dashboard" replace />} />
         <Route path="/app" element={<RequireAccountAccess><AppShell /></RequireAccountAccess>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="capture" element={<CapturePage />} />
           <Route path="agent" element={<Navigate to="/app/dashboard" replace />} />
           <Route path="profile" element={<BusinessProfilePage />} />
           <Route path="tax" element={<TaxPage />} />
@@ -69,4 +81,3 @@ export default function App() {
     </ErrorBoundary>
   );
 }
-

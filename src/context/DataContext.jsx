@@ -199,8 +199,8 @@ export function DataProvider({ children }) {
     bump();
   }, [load, bump]);
 
-  const enterSyntheticDemo = useCallback(async () => {
-    await transactionService.enterSyntheticDemo({ businessId, profile: businessProfile || {} });
+  const enterSyntheticDemo = useCallback(async (profileOverride) => {
+    await transactionService.enterSyntheticDemo({ businessId, profile: profileOverride || businessProfile || {} });
     setIsSyntheticDemo(true);
     await load();
     bump();
@@ -250,4 +250,3 @@ export function useData() {
   if (!ctx) throw new Error('useData must be used inside <DataProvider>');
   return ctx;
 }
-

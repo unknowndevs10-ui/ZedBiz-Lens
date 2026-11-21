@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowRight, Pause, Play } from 'lucide-react';
 import Button from '../common/Button';
 
@@ -36,9 +37,11 @@ const networkNodes = [
 ];
 
 export default function Hero() {
+  const navigate = useNavigate();
   const [activeSlide, setActiveSlide] = useState(0);
   const [paused, setPaused] = useState(false);
   const [interacting, setInteracting] = useState(false);
+  const [businessPrompt, setBusinessPrompt] = useState('');
   const slide = slides[activeSlide];
 
   useEffect(() => {
@@ -48,6 +51,11 @@ export default function Hero() {
   }, [paused, interacting]);
 
   const moveSlide = (step) => setActiveSlide((current) => (current + step + slides.length) % slides.length);
+  const launchDemo = () => {
+    const prompt = businessPrompt.toLowerCase();
+    const scenario = /tomato|trader|market|produce/.test(prompt) ? 'tomato' : /auto|spare|parts|kitwe/.test(prompt) ? 'auto-spares' : 'mini-mart';
+    navigate(`/demo/${scenario}`);
+  };
 
   return (
     <section className="landing-hero relative overflow-hidden border-b border-line" onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false); }}>
@@ -59,9 +67,14 @@ export default function Hero() {
             <h1 className="mt-5 text-[2.7rem] font-extrabold leading-[1.04] tracking-[-.05em] sm:text-6xl lg:text-[4.35rem]">{slide.title}</h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-ink-muted sm:text-lg">{slide.description}</p>
           </div>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Button to="/login" size="lg" icon={ArrowRight}>Open your workspace</Button>
-            <a href="#workflow" className="inline-flex h-12 items-center gap-2 rounded-md border border-line bg-[#121a1b]/70 px-5 text-sm font-bold text-ink transition-colors hover:border-brand-500 focus-ring">See how it works <ArrowDown className="h-4 w-4" /></a>
+          <div className="mt-7 max-w-lg rounded-xl border border-line bg-[#101718] p-3 sm:p-4">
+            <label htmlFor="business-prompt" className="text-[10px] font-extrabold uppercase tracking-[.16em] text-ink-muted">What kind of business do you run?</label>
+            <div className="mt-2 flex gap-2"><input id="business-prompt" value={businessPrompt} onChange={(event) => setBusinessPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') launchDemo(); }} placeholder="e.g. Tomato trader in Lusaka" className="field h-11 min-w-0 flex-1" maxLength={100} /><Button size="md" icon={ArrowRight} onClick={launchDemo}>Launch demo</Button></div>
+            <div className="mt-3 flex flex-wrap gap-2">{[['Soweto Market tomato trader', 'tomato'], ['Kabulonga mini-mart', 'mini-mart'], ['Kitwe auto-spares shop', 'auto-spares']].map(([preset, scenario]) => <button key={preset} type="button" onClick={() => navigate(`/demo/${scenario}`)} className="rounded-full border border-line px-2.5 py-1.5 text-[10px] font-semibold text-ink-muted transition-colors hover:border-brand-500 hover:text-ink">{preset}</button>)}</div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Button to="/login" variant="secondary" size="md">Team sign in</Button>
+            <a href="/how-it-works" className="inline-flex h-11 items-center gap-2 px-2 text-sm font-bold text-ink-muted transition-colors hover:text-ink focus-ring">How it works <ArrowDown className="h-4 w-4" /></a>
           </div>
           <div className="mt-8 flex items-center gap-3 text-xs text-ink-muted">
             <div className="flex items-center gap-1.5" role="group" aria-label="Homepage slides">
@@ -107,4 +120,3 @@ export default function Hero() {
     </section>
   );
 }
-

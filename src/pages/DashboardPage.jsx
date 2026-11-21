@@ -20,6 +20,7 @@ import { insightsService } from '../services/insightsService';
 import { buildBusinessSignals } from '../services/businessBrain';
 import { speakBusinessText, stopSpeaking } from '../services/voiceService';
 import { formatKwacha, formatPercent } from '../utils/format';
+import { predictThirtyDayRevenue } from '../services/engineAdapter';
 
 const TAX_STATUS = [
   ['pacraStatus', 'PACRA registration'],
@@ -41,8 +42,12 @@ export default function DashboardPage() {
     () => insightsService.getDashboard({ businessId, period }),
     [businessId, period, version],
   );
+  const { data: forecast } = useAsync(
+    () => predictThirtyDayRevenue((data?.series || []).map((point) => ({ date: point.label, revenue: point.revenue }))),
+    [data?.series],
+  );
   const signals = useMemo(() => buildBusinessSignals({ profile: businessProfile, transactions }), [businessProfile, transactions]);
-  const unresolvedChecks = businessProfile?.businessFormality === 'informal'
+  const unresolvedChecks = isSyntheticDemo || businessProfile?.businessFormality === 'informal'
     ? []
     : TAX_STATUS.filter(([key]) => !['yes', 'no'].includes(businessProfile?.[key]));
 
@@ -82,7 +87,7 @@ export default function DashboardPage() {
         <div>
           <p className="eyebrow">YOUR BUSINESS, IN FOCUS</p>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{businessProfile?.displayName ? `Good to see you, ${businessProfile.displayName}` : 'Your business at a glance'}</h1>
-          <p className="mt-1 text-sm text-ink-muted">{business?.name || businessProfile?.businessName || 'Your business'} <span aria-hidden="true">�</span> a clearer view of the numbers you have confirmed.</p>
+          <p className="mt-1 text-sm text-ink-muted">{business?.name || businessProfile?.businessName || 'Your business'} <span aria-hidden="true">·</span> a clearer view of the numbers you have confirmed.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" icon={Sparkles} onClick={() => setWelcomeReplay((value) => value + 1)}>Welcome guide</Button>
@@ -108,9 +113,8 @@ export default function DashboardPage() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-extrabold">Confirmed activity</h2><PeriodFilter value={period} onChange={setPeriod} /></div>
         {loading && !data ? <Card><LoadingState label="Preparing your business view" /></Card> : error ? <Card><ErrorState title="We could not prepare the dashboard" description={error.message} onRetry={reloadDashboard} /></Card> : data && (
           <>
-            <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3">
               <StatCard label="Sales" value={formatKwacha(data.summary.sales)} delta={data.deltas?.sales} />
-              <StatCard label="Expenses" value={formatKwacha(data.summary.expenses)} delta={data.deltas?.expenses} goodWhenUp={false} />
               <StatCard label="Gross profit" value={formatKwacha(data.summary.grossProfit)} delta={data.deltas?.grossProfit} />
               <StatCard label="Net profit" value={formatKwacha(data.summary.netProfit)} delta={data.deltas?.netProfit} emphasis />
             </div>
@@ -121,12 +125,14 @@ export default function DashboardPage() {
 
       {data && data.transactionCount > 0 && <><BusinessPulse signals={signals} onSpeak={speakSignals} speaking={speaking} />{voiceError && <p role="status" className="mt-2 text-xs text-ink-muted">{voiceError}</p>}</>}
 
+      {forecast && <section className="mt-5 border-y border-line py-4" aria-labelledby="forecast-title"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="eyebrow">30-DAY OUTLOOK</p><h2 id="forecast-title" className="mt-1 text-base font-extrabold">Revenue scenario</h2><p className="mt-1 text-xs text-ink-muted">Offline baseline from recent records. Not an XGBoost model or a guarantee.</p></div><div className="text-right"><p className="text-xs font-semibold text-ink-muted">Illustrative revenue</p><p className="mt-1 text-2xl font-extrabold tabular-nums">{formatKwacha(forecast.predicted_revenue)}</p><p className="mt-1 text-[11px] tabular-nums text-ink-muted">Range {formatKwacha(forecast.confidence_low)} - {formatKwacha(forecast.confidence_high)}</p></div></div><p className="mt-3 border-l border-brand-700 pl-3 text-xs text-ink-muted">Driver: {forecast.growth_driver}</p></section>}
+
       {data && !loading && data.transactionCount === 0 ? (
         <Card className="mt-6"><EmptyState icon={ClipboardList} title="Your ledger is ready for its first entry" description="Add a real sale or expense to begin. To explore the app with populated sample records, choose Explore synthetic demo above; those records stay separate from your ledger." action={<Button icon={Plus} onClick={openAddEntry}>Add your first entry</Button>} /></Card>
       ) : data && (
         <>
           <section className="mt-6 grid gap-6 xl:grid-cols-5" aria-label="Performance and costs">
-            <Card className="xl:col-span-3"><CardHeader title="Sales, expenses and profit" description={`${data.period.label} � recorded activity over time`} /><div className="p-4 pt-3 sm:p-5 sm:pt-3"><RevenueExpenseChart series={data.series} /></div></Card>
+            <Card className="xl:col-span-3"><CardHeader title="Sales, expenses and profit" description={`${data.period.label} · recorded activity over time`} /><div className="p-4 pt-3 sm:p-5 sm:pt-3"><RevenueExpenseChart series={data.series} /></div></Card>
             <div className="space-y-4 xl:col-span-2"><PerformanceSummary data={data} /><details className="rounded-lg border border-line bg-[#121a1b]"><summary className="cursor-pointer px-4 py-4 text-sm font-bold hover:text-brand-700">Expense mix</summary><div className="border-t border-line p-4 sm:p-5"><CategoryBreakdown items={data.expenseBreakdown} /></div></details></div>
           </section>
           <section className="mt-6" aria-label="Recent activity"><RecentTransactions transactions={data.recent} /></section>
@@ -137,4 +143,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

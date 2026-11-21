@@ -1,6 +1,6 @@
 # ZedBiz Lens
 
-**UnknownDevs � Zamtel x ZRA Innovation Challenge � Intelligent Customer and Business Ecosystem**
+**UnknownDevs · Zamtel × ZRA Innovation Challenge · Intelligent Customer and Business Ecosystem**
 
 ZedBiz Lens is a synthetic-data prototype for small and informal businesses in Zambia. It brings everyday records, clear business summaries and tax-readiness indicators into one calm workspace. The AI layer helps turn short notes into reviewable drafts and routes supported requests to deterministic business tools.
 
@@ -33,11 +33,12 @@ The test suite checks the local intent baseline. The calculator tests are in `ag
 
 ## What the prototype does
 
-- **Record keeping:** generate 120 days of deterministic synthetic activity for a mini-mart, hair studio and market stall. Add a note; review, edit, confirm or reject the resulting draft.
+- **Record keeping:** generate 120 days of deterministic synthetic activity for a Soweto Market tomato trader, Kabulonga Mini-Mart, Kitwe Auto-Spares Shop and a profitable solar-services SME. Add a note; review, edit, confirm or reject the resulting draft.
+- **Receipt capture:** the capture screen accepts a receipt photo and displays supplier, date, line items, COGS, expenses, total and confidence from a configured extraction service. Without one, it shows a clearly labelled fixture that is not inferred from the image and cannot be saved as a real ledger entry.
 - **Business profile:** a five-step setup asks how to address the user, their role, business type and registration journey, province/market, preferred language, and cash/mobile-money/credit methods. Informal businesses get a formalisation-interest question; registered businesses get self-reported PACRA/TPIN/VAT readiness questions without collecting ID numbers. It creates a clean empty ledger separate from synthetic samples.
 - **AI Agent Lab:** a small synthetic intent classifier recognizes sale, expense, summary or unsupported requests. It can prepare a sale/expense draft or call the confirmed-record summary tool. A possible duplicate is held for review.
 - **Voice:** browser speech recognition and speech synthesis are optional. Voice recognition is English-only in this demo and may use the browser's speech service. Typing works without it.
-- **Dashboard:** totals, trend charts, expense breakdown, performance comparison and recent records update from confirmed entries.
+- **Dashboard:** totals, trend charts, expense breakdown, performance comparison and recent records update from confirmed entries. A 30-day revenue outlook uses a clearly labelled deterministic baseline offline; it is not presented as XGBoost.
 - **Tax readiness:** the app shows two turnover-tax scenarios and VAT threshold progress. It does not select a tax base, calculate income-tax liability or calculate VAT payable.
 - **Reports:** download synthetic financial and illustrative tax-position PDFs from confirmed records.
 - **Dark theme:** a low-glare charcoal workspace keeps the teal and amber brand accents and respects reduced-motion preferences.
@@ -65,6 +66,12 @@ The local Agent Lab includes Dev A's optional FastAPI/SVM baseline. Set `VITE_AG
 Financial summaries and tax scenarios are deterministic. The frontend and optional API read the shared `tax_rules.json`; the calculator source is `agent-lab/nlu-api/calculations.py`. `Trial_ZRA_Calculator.py` and `ZRA_calculator.py` are command-line entry points into the same engine, so they no longer maintain separate tax formulas. Both turnover-tax interpretations remain visible until Finance confirms the applicable base.
 
 The web tax view projects the last 90 days to an annual amount. The API accepts monthly or annual turnover. Compare outputs only when the input period and assumptions match.
+
+### Dev 2 integration seam
+
+`src/services/engineAdapter.ts` isolates the optional receipt and forecast services from the interface. Set `VITE_ENGINE_API_URL` to a service that implements `POST /receipts/extract` and `POST /forecast/revenue`. Receipt extraction should return supplier, date, line items, COGS, expenses, total and confidence. Forecast requests contain confirmed revenue history and a 30-day horizon. If the URL is unset, the demo uses a receipt fixture and a transparent moving-average/drift baseline. The adapter is the intended handoff point for a validated Donut-compatible extractor and forecast model; it does not claim either model is already running.
+
+Public pages: `/how-it-works` explains the capture and review flow; `/scope` explains AI, financial and tax boundaries. The homepage scenario chips open isolated, read-only synthetic workspaces.
 
 ### Run the optional FastAPI Agent Lab
 
@@ -120,4 +127,3 @@ Import this repository as a Vite project with the default build command `npm run
 ## Not production-ready yet
 
 Email and Google authentication, owner-scoped business profiles, and the business onboarding flow are implemented in the app. Email signup and Google OAuth still need their provider settings enabled in the connected Supabase project. Durable tenant-isolated transaction storage, verified tax rules and eligibility logic, real-world and local-language model evaluation, receipt OCR, Zamtel USSD/SMS/connectivity, and ZRA integration remain future layers. No AI prediction can confirm a transaction or determine tax payable.
-

@@ -15,7 +15,7 @@ export const EXPENSE_CATEGORIES = [
 export const BUSINESSES = [
   {
     id: 'retail',
-    name: 'Kabwe Road Mini-Mart',
+    name: 'Kabulonga Mini-Mart',
     kind: 'Formal small retail shop',
     businessFormality: 'registered',
     scenario: 'formal_shop',
@@ -24,16 +24,16 @@ export const BUSINESSES = [
   },
   {
     id: 'salon',
-    name: 'Glow Hair Studio',
-    kind: 'Small service business',
+    name: 'Kitwe Auto-Spares Shop',
+    kind: 'Growing auto-spares retailer',
     businessFormality: 'formalizing',
-    scenario: 'service_microbusiness',
+    scenario: 'auto_spares_retailer',
     location: 'Kitwe',
-    summary: 'Braiding and styling with regular product purchases.',
+    summary: 'A small parts retailer with recurring inventory purchases and daily sales.',
   },
   {
     id: 'market',
-    name: 'Soweto Stall 14',
+    name: 'Soweto Market Tomato Trader',
     kind: 'Informal tomato and produce trader',
     businessFormality: 'informal',
     scenario: 'tomato_trader',
@@ -52,6 +52,9 @@ export const BUSINESSES = [
 ];
 
 export function chooseSyntheticBusiness(profile = {}) {
+  if (profile.scenarioHint === 'tomato') return BUSINESSES.find((business) => business.id === 'market');
+  if (profile.scenarioHint === 'mini-mart') return BUSINESSES.find((business) => business.id === 'retail');
+  if (profile.scenarioHint === 'auto-spares') return BUSINESSES.find((business) => business.id === 'salon');
   const type = String(profile.businessType || '').toLowerCase();
   if (profile.businessFormality === 'informal' || /market|trader|produce|agric/.test(type)) return BUSINESSES.find((business) => business.id === 'market');
   if (/salon|beauty|personal care|hair/.test(type)) return BUSINESSES.find((business) => business.id === 'salon');
@@ -70,11 +73,11 @@ const RULES = {
     { type: 'expense', category: 'Wages', description: 'Shop assistant wages', range: [2400, 2400], every: 'monthly', dom: 28 },
   ],
   salon: [
-    { type: 'income', category: 'Services', description: ['Braiding and styling', 'Hair treatment clients', 'Weave installation'], range: [250, 950], every: 'daily', p: 0.9, skipDow: [0] },
-    { type: 'expense', category: 'Stock purchases', description: 'Hair products and extensions', range: [350, 900], every: 'weekly', dow: 2 },
-    { type: 'expense', category: 'Rent', description: 'Salon rent', range: [1800, 1800], every: 'monthly', dom: 1 },
-    { type: 'expense', category: 'Utilities', description: 'Electricity and water', range: [300, 500], every: 'monthly', dom: 15 },
-    { type: 'expense', category: 'Wages', description: 'Assistant stylist wages', range: [3000, 3000], every: 'monthly', dom: 28 },
+    { type: 'income', category: 'Sales', description: ['Spare parts counter sales', 'Customer paid for brake pads', 'Sold an alternator'], range: [320, 2200], every: 'daily', p: 0.9, skipDow: [0] },
+    { type: 'expense', category: 'Stock purchases', description: 'Auto parts wholesale stock', range: [1500, 6200], every: 'weekly', dow: 2 },
+    { type: 'expense', category: 'Rent', description: 'Shop rent', range: [2500, 2500], every: 'monthly', dom: 1 },
+    { type: 'expense', category: 'Utilities', description: 'Electricity and water', range: [400, 650], every: 'monthly', dom: 15 },
+    { type: 'expense', category: 'Wages', description: 'Shop assistant wages', range: [3000, 3000], every: 'monthly', dom: 28 },
   ],
   market: [
     { type: 'income', category: 'Sales', description: ['Produce sales', 'Tomatoes and vegetables sold', 'Market day sales'], range: [350, 1100], every: 'daily', p: 0.92, step: 5 },
@@ -160,4 +163,3 @@ export function generateSeedTransactions(business, days = 120) {
   }
   return transactions;
 }
-

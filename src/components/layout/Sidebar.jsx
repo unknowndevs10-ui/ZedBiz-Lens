@@ -1,5 +1,5 @@
 import { NavLink, Link } from 'react-router-dom';
-import { ArrowLeft, LogOut, Plus } from 'lucide-react';
+import { ArrowLeft, FileText, LogOut, Plus, Store } from 'lucide-react';
 import Logo from '../common/Logo';
 import Button from '../common/Button';
 import { NAV_ITEMS } from './navItems';
@@ -38,6 +38,8 @@ export default function Sidebar({ onAddEntry }) {
             )}
           </NavLink>
         ))}
+        <NavLink to="/app/profile" className={({isActive})=>`flex h-10 items-center gap-3 rounded-md px-3 text-sm font-semibold ${isActive?'bg-brand-50 text-brand-700':'text-ink-muted hover:bg-surface hover:text-ink'}`}><Store className="h-[18px] w-[18px]" />Business profile</NavLink>
+        <NavLink to="/app/reports" className={({isActive})=>`flex h-10 items-center gap-3 rounded-md px-3 text-sm font-semibold ${isActive?'bg-brand-50 text-brand-700':'text-ink-muted hover:bg-surface hover:text-ink'}`}><FileText className="h-[18px] w-[18px]" />Reports</NavLink>
       </nav>
 
       <div className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
@@ -51,4 +53,3 @@ export default function Sidebar({ onAddEntry }) {
     </aside>
   );
 }
-

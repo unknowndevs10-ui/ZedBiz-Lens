@@ -33,7 +33,7 @@ export default function AppShell() {
         <Sidebar onAddEntry={() => setAddOpen(true)} />
         <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-8">
           <div className="mx-auto max-w-6xl">
-            {isSyntheticDemo && <div role="status" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-[#1b1913] px-4 py-3"><div className="flex items-start gap-3"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><div><p className="text-xs font-extrabold text-ink">Synthetic sample workspace � read only</p><p className="mt-1 text-[11px] leading-5 text-ink-muted">These invented records are isolated from your business ledger and are not for tax filing.</p></div></div><Button variant="secondary" size="sm" icon={ArrowLeftRight} onClick={returnToLedger}>Return to my ledger</Button></div>}
+            {isSyntheticDemo && <div role="status" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-[#1b1913] px-4 py-3"><div className="flex items-start gap-3"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><div><p className="text-xs font-extrabold text-ink">Synthetic sample workspace · read only</p><p className="mt-1 text-[11px] leading-5 text-ink-muted">These invented records are isolated from your business ledger and are not for tax filing.</p></div></div><Button variant="secondary" size="sm" icon={ArrowLeftRight} onClick={returnToLedger}>Return to my ledger</Button></div>}
             <ErrorBoundary>
               <Suspense fallback={<LoadingState label="Loading page" />}>
                 <Outlet context={{ openAddEntry: () => setAddOpen(true) }} />
@@ -48,4 +48,3 @@ export default function AppShell() {
     </div>
   );
 }
-

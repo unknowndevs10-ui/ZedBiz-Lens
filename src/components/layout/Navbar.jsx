@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Logo from '../common/Logo';
 import Button from '../common/Button';
 
 const LINKS = [
-  { href: '#workflow', label: 'How it works' },
-  { href: '#intelligence', label: 'Business intelligence' },
-  { href: '#trust', label: 'Tax readiness' },
+  { href: '/how-it-works', label: 'How it works' },
+  { href: '/scope', label: 'Compliance & AI scope' },
 ];
 
 export default function Navbar() {
@@ -17,9 +17,9 @@ export default function Navbar() {
         <Logo />
         <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="rounded-md px-3 py-2 text-sm font-semibold text-ink-muted hover:bg-surface hover:text-ink focus-ring">
+            <Link key={l.href} to={l.href} className="rounded-md px-3 py-2 text-sm font-semibold text-ink-muted hover:bg-surface hover:text-ink focus-ring">
               {l.label}
-            </a>
+            </Link>
           ))}
           <Button to="/login" size="sm" className="ml-3">Team access</Button>
         </nav>
@@ -30,9 +30,9 @@ export default function Navbar() {
       {open && (
         <nav id="mobile-menu" aria-label="Primary mobile" className="border-t border-line bg-[#121a1b] px-4 pb-4 pt-2 md:hidden">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-md px-3 py-3 text-[15px] font-semibold text-ink hover:bg-surface">
+            <Link key={l.href} to={l.href} onClick={() => setOpen(false)} className="block rounded-md px-3 py-3 text-[15px] font-semibold text-ink hover:bg-surface">
               {l.label}
-            </a>
+            </Link>
           ))}
           <Button to="/login" className="mt-2 w-full">Team access</Button>
         </nav>
@@ -40,4 +40,3 @@ export default function Navbar() {
     </header>
   );
 }
-

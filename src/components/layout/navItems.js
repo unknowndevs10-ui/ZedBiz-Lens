@@ -1,10 +1,8 @@
-import { FileText, Landmark, LayoutDashboard, ReceiptText, Store } from 'lucide-react';
+import { Camera, Landmark, LayoutDashboard, ReceiptText } from 'lucide-react';
 
 export const NAV_ITEMS = [
-  { to: '/app/dashboard', label: 'Dashboard', mobileLabel: 'Home', icon: LayoutDashboard },
-  { to: '/app/transactions', label: 'Transactions', mobileLabel: 'Ledger', icon: ReceiptText, badge: true },
-  { to: '/app/profile', label: 'Business profile', mobileLabel: 'Profile', icon: Store },
-  { to: '/app/tax', label: 'Tax position', mobileLabel: 'Tax', icon: Landmark },
-  { to: '/app/reports', label: 'Reports', mobileLabel: 'Reports', icon: FileText },
+  { to: '/app/dashboard', label: 'Pulse', mobileLabel: 'Pulse', icon: LayoutDashboard },
+  { to: '/app/capture', label: 'Capture', mobileLabel: 'Capture', icon: Camera },
+  { to: '/app/transactions', label: 'Ledger', mobileLabel: 'Ledger', icon: ReceiptText, badge: true },
+  { to: '/app/tax', label: 'ZRA tax', mobileLabel: 'ZRA Tax', icon: Landmark },
 ];
-
