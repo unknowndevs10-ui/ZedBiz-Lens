@@ -1,123 +1,129 @@
-# ZedBiz Lens – Frontend (Dev A)
+# ZedBiz Lens
 
-Business financial management for small businesses and informal traders in Zambia.
-React + Vite + Tailwind CSS, with Lucide icons and Recharts. The app runs **entirely on mock data** until the FastAPI backend is connected.
+**UnknownDevs · Zamtel × ZRA Innovation Challenge · Intelligent Customer and Business Ecosystem**
 
-> **DEMO MODE** – business data is synthetic. The tax-readiness screen uses reference assumptions in `tax_rules.json`; turnover-tax bases and business eligibility still need Finance review. It is not a tax assessment, filing calculation or compliance check.
+ZedBiz Lens is a synthetic-data prototype for small and informal businesses in Zambia. It brings everyday records, clear business summaries and tax-readiness indicators into one calm workspace. The AI layer helps turn short notes into reviewable drafts and routes supported requests to deterministic business tools.
 
-## Run it
+> **Demo only.** All seeded businesses and transactions are fictional. Tax scenarios use reference assumptions in `tax_rules.json`; they are not tax advice, an eligibility decision, or a filing calculation. Finance/ZRA must confirm the treatment before real use.
+
+## Run the web demo
 
 Requires Node.js 18 or newer.
 
-```bash
+### Quick preview from the downloaded ZIP (Windows)
+
+The ZIP includes the built demo. Extract it, then double-click `START-DEMO.bat`. Python 3 is required for this one-click preview; it uses only Python's standard library and opens the dashboard directly in your browser. Keep the launcher window open while using the app, and press Ctrl+C in that window to stop it. If a port from 8000 to 8009 is busy, the launcher automatically tries the next one.
+
+### Run the source for development
+
+```powershell
 npm install
-npm run dev        # http://localhost:5173
-npm run build      # production build in dist/
-npm run preview    # serve the production build locally
+npm run dev
 ```
 
-`.env` is optional. Copy `.env.example` to `.env` to change settings.
+Open the local Vite URL. The landing page is public. Users can create an account with email and password or continue with Google, then complete the guided business profile before the dashboard.
 
-## Pages
-
-| Route | Page |
-| --- | --- |
-| `/` | Landing page with the business entry box |
-| `/app/transactions` | Review extracted entries (confirm, edit, reject) and the full ledger |
-| `/app/dashboard` | Totals, revenue and expense chart, category breakdown, performance summary, recent transactions, period filters |
-| `/app/tax` | Illustrative tax position, VAT threshold progress, regime comparison, notifications, explanation of changes |
-| `/app/reports` | Business Financial Report and Tax Position Report with preview and PDF download |
-
-Try the flow: landing page → pick an example → **Process entry** → confirm lines → open **Dashboard** and see the numbers move. Use the business switcher (retail shop, hair salon, market trader) and **Reset demo data** in the sidebar.
-
-## Mock mode vs live mode
-
-One setting in `.env`:
-
-```
-VITE_USE_MOCK_DATA=true
-VITE_API_BASE_URL=http://localhost:8000
+```powershell
+npm test
+npm run build
+npm run preview
 ```
 
-- `true` (default): `src/services/mockApi.js` serves everything from `localStorage`. No network.
-- `false`: `src/services/api.js` calls the FastAPI backend at `VITE_API_BASE_URL`.
+The test suite checks the local intent baseline. The calculator tests are in `agent-lab/nlu-api/tests` and `tests`.
 
-Only `src/config.js` reads environment variables. Components never contain URLs.
+## What the prototype does
 
-## Connecting the real backend
+- **Record keeping:** generate 120 days of deterministic synthetic activity for a Soweto Market tomato trader, Kabulonga Mini-Mart, Kitwe Auto-Spares Shop and a profitable solar-services SME. Add a note; review, edit, confirm or reject the resulting draft.
+- **Receipt capture:** the capture screen accepts a receipt photo and displays supplier, date, line items, COGS, expenses, total and confidence from a configured extraction service. Without one, it shows a clearly labelled fixture that is not inferred from the image and cannot be saved as a real ledger entry.
+- **Business profile:** a five-step setup asks how to address the user, their role, business type and registration journey, province/market, preferred language, and cash/mobile-money/credit methods. Informal businesses get a formalisation-interest question; registered businesses get self-reported PACRA/TPIN/VAT readiness questions without collecting ID numbers. It creates a clean empty ledger separate from synthetic samples.
+- **AI Agent Lab:** a small synthetic intent classifier recognizes sale, expense, summary or unsupported requests. It can prepare a sale/expense draft or call the confirmed-record summary tool. A possible duplicate is held for review.
+- **Voice:** browser speech recognition and speech synthesis are optional. Voice recognition is English-only in this demo and may use the browser's speech service. Typing works without it.
+- **Dashboard:** totals, trend charts, expense breakdown, performance comparison and recent records update from confirmed entries. A 30-day revenue outlook uses a clearly labelled deterministic baseline offline; it is not presented as XGBoost.
+- **Tax readiness:** the app shows two turnover-tax scenarios and VAT threshold progress. It does not select a tax base, calculate income-tax liability or calculate VAT payable.
+- **Reports:** download synthetic financial and illustrative tax-position PDFs from confirmed records.
+- **Dark theme:** a low-glare charcoal workspace keeps the teal and amber brand accents and respects reduced-motion preferences.
 
-The endpoint contract is **not final**. Everything that has to change is in four places:
+## Account setup still required
 
-1. `src/services/api.js` – `ENDPOINTS` (paths) and the `liveApi` request bodies and query names. All paths are placeholders.
-2. `src/services/transactionService.js` – `normalizeTransaction()` maps the backend transaction shape to the UI shape (already accepts camelCase and snake_case).
-3. `src/services/insightsService.js` – map the backend dashboard and tax responses to the shapes returned by `mockApi.js` (`buildDashboard`, `buildTaxPosition` in `src/utils/finance.js` document them).
-4. `src/services/reportService.js` – see below.
+### Supabase Auth
 
-Placeholder methods (same names in `mockApi.js` and `liveApi`): `submitEntry`, `getTransactions`, `updateTransaction`, `confirmTransaction`, `rejectTransaction`, `getDashboard`, `getTaxPosition`, `downloadFinancialReport`, `downloadTaxReport`, `listBusinesses`.
+The app uses Supabase Auth for email/password accounts and Google OAuth. Enable email signups in Supabase Dashboard > Authentication > Settings. For Google sign-in, enable the Google provider under Authentication > Sign In / Providers and add its OAuth client ID and secret. Add `https://zedbiz-lens.vercel.app/login` and your local Vite origin to the Supabase redirect URL allowlist. Google's OAuth client must also allow the Supabase callback URL shown in the provider setup.
 
-### Dev B's PDF generators
+1. `.env.example` shows the optional `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` overrides. The connected project's browser-safe URL and publishable key are bundled as defaults so the ZIP and Vercel build can sign in without build-time secrets. Never use a secret/service-role key in Vite.
+2. `public.business_profiles` stores a profile under each Auth user ID with row-level security. The migration `202611210001_self_service_business_profiles.sql` grants each authenticated user access to their own row only.
+3. `public.team_members` remains an internal role/label list for the UnknownDevs team. It no longer blocks business-account signup or onboarding.
+4. Email signup may require the user to confirm the address before returning to ZedBiz. On first sign-in, the multi-step business setup still runs before the dashboard.
+5. Restart Vite or rebuild `dist` after changing the environment values.
 
-All report buttons call `downloadReport(kind, params)` in `src/services/reportService.js`. Two ways to connect:
+Passwords are created per account and reset through the email flow. Do not share a common password sheet.
 
-- Backend generates the PDF: set mock mode off and point `ENDPOINTS.financialReport` / `ENDPOINTS.taxReport` at the endpoints. The response must be the PDF file.
-- Browser-side generator: register it once at start-up.
+## AI and calculation design
 
-```js
-import { registerPdfGenerator } from './services/reportService';
-registerPdfGenerator('financial', async ({ businessId, period }) => ({ blob, filename }));
-registerPdfGenerator('tax', async ({ businessId }) => ({ blob, filename }));
+The default app runs an offline Naive Bayes intent baseline over 44 fictional English phrases. It uses no model API key. This is a wiring prototype, not a dependable business classifier. Accuracy has not been validated on real operators, accents, noisy speech or local languages. Low-confidence and unsupported requests are held for clarification. An agent-proposed record remains pending until a person confirms it.
+
+The local Agent Lab includes Dev A's optional FastAPI/SVM baseline. Set `VITE_AGENT_API_URL` in `.env.local` to use that service instead of the browser baseline. It uses a small synthetic dataset and the training report in `agent-lab/nlu-api/artifacts/metadata.json`; its reported synthetic test score is not a real-world accuracy claim. The app does not need this service to run.
+
+Financial summaries and tax scenarios are deterministic. The frontend and optional API read the shared `tax_rules.json`; the calculator source is `agent-lab/nlu-api/calculations.py`. `Trial_ZRA_Calculator.py` and `ZRA_calculator.py` are command-line entry points into the same engine, so they no longer maintain separate tax formulas. Both turnover-tax interpretations remain visible until Finance confirms the applicable base.
+
+The web tax view projects the last 90 days to an annual amount. The API accepts monthly or annual turnover. Compare outputs only when the input period and assumptions match.
+
+### Dev 2 integration seam
+
+`src/services/engineAdapter.ts` isolates the optional receipt and forecast services from the interface. Set `VITE_ENGINE_API_URL` to a service that implements `POST /receipts/extract` and `POST /forecast/revenue`. Receipt extraction should return supplier, date, line items, COGS, expenses, total and confidence. Forecast requests contain confirmed revenue history and a 30-day horizon. If the URL is unset, the demo uses a receipt fixture and a transparent moving-average/drift baseline. The adapter is the intended handoff point for a validated Donut-compatible extractor and forecast model; it does not claim either model is already running.
+
+Public pages: `/how-it-works` explains the capture and review flow; `/scope` explains AI, financial and tax boundaries. The homepage scenario chips open isolated, read-only synthetic workspaces.
+
+### Run the optional FastAPI Agent Lab
+
+In PowerShell from the repository root:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r agent-lab/nlu-api/requirements.txt
+uvicorn app:app --app-dir agent-lab/nlu-api --host 127.0.0.1 --port 4176
 ```
 
-In demo mode the PDFs come from a tiny built-in writer (`src/utils/simplePdf.js`, `reportPdf.js`). They are placeholder layouts and contain no real tax calculations.
+Then set `VITE_AGENT_API_URL=http://127.0.0.1:4176` in `.env.local` and restart Vite. The API allows the local Vite origins by default. For a hosted API, set `ZEDBIZ_ALLOWED_ORIGINS` to the exact frontend origin. The frontend Content Security Policy in `vercel.json` must also include the exact API origin in `connect-src`.
 
-## What is simulated
+Try the API at `http://127.0.0.1:4176/docs`. To run its calculator checks:
 
-- **Extraction** (`src/utils/mockExtraction.js`): a keyword and regex rule set, not an AI model. The UI labels it "Simulated extraction". Confidence values are a demo heuristic.
-- **Dashboard figures**: calculated in `src/utils/finance.js` from confirmed transactions. Gross profit = sales minus "Stock purchases". In live mode the backend owns these numbers.
-- **Tax readiness**: the demo reads the shared reference values from root `tax_rules.json`. It shows two turnover-tax interpretations, annualises the last 90 days of confirmed sales, and leaves income-tax liability and VAT payable uncalculated. Finance must confirm eligibility and the turnover-tax base.
-- **Synthetic history**: 120 days of data per demo business, generated in `src/data/mockData.js` and slid forward so it always ends today.
-
-## Taxable / not taxable labels
-
-Income entries carry `taxable: 'taxable' | 'not_taxable' | 'unsure'` and a short `taxReason`. In demo mode a placeholder keyword rule sets them (`classifyTaxable` in `src/utils/mockExtraction.js`). The user can override the label in the edit dialog. Income marked not taxable is left out of turnover on the Tax page, and "unsure" entries raise a tax notification. The real classifier should run in the FastAPI backend and return the same fields. See `CLAUDE.md` for rules for AI agents working on this repo.
-
-## Project structure
-
-```
-src/
-  components/
-    common/        Button, Card, Badge, Modal, Notification, States (loading/empty/error), form controls, PeriodFilter, Logo
-    layout/        AppShell, Sidebar, Topbar, MobileNav, Navbar, Footer, DemoBanner, BusinessSwitcher
-    landing/       Hero, ExampleLedger, Features, AudienceSection
-    transactions/  EntryBox, AddEntryModal, EditTransactionModal, TransactionCard, EntryReviewGroup, TransactionTable, ConfidenceMeter
-    dashboard/     StatCard, PerformanceSummary, RecentTransactions
-    charts/        RevenueExpenseChart, CategoryBreakdown
-    tax/           TaxProgress, RegimeComparison
-    reports/       ReportCard
-  context/         DataContext (business + transactions), ToastContext
-  hooks/           useAsync
-  pages/           LandingPage, TransactionsPage, DashboardPage, TaxPage, ReportsPage, NotFoundPage
-  services/        api.js, mockApi.js, transactionService.js, insightsService.js, reportService.js
-  utils/           format, finance, mockExtraction, simplePdf, reportPdf, download, theme
-  data/            mockData.js, taxDemo.js
-  styles/          index.css
-  config.js        App.jsx   main.jsx
+```powershell
+python -m unittest discover -s tests -v
+Push-Location agent-lab/nlu-api
+python -m unittest discover -s tests -v
+Pop-Location
+python Trial_ZRA_Calculator.py
 ```
 
-## Design and accessibility notes
+## Hosting on Vercel
 
-- Palette from the approved brand: Teal `#1F6F6B`, Amber `#E0A84B`, Background `#F2F6F6`, Text `#1E2A2F`, Success `#2E7D4F`, Danger `#B83A3A`. Amber is only used as a fill with dark text.
-- Manrope is bundled through `@fontsource-variable/manrope` (no external font requests).
-- Mobile-first: bottom navigation on phones, sidebar from `lg`, tables become stacked rows below `md`, no horizontal scrolling.
-- Keyboard focus rings, labelled controls, dialog focus trapping, and `prefers-reduced-motion` are supported.
-- Pages load on demand and the charts library is a separate chunk to keep the first load light.
+Import this repository as a Vite project with the default build command `npm run build` and output directory `dist`. The connected Supabase URL and publishable key are already bundled as safe client defaults; you can instead override them with Vercel's Production, Preview and Development environment variables. `vercel.json` includes SPA route fallback and security headers. The in-browser model and synthetic records do not require a Python service. If you connect a separately hosted FastAPI service, restrict CORS to the exact Vercel origin and update the Content Security Policy for that service host.
 
-## Single-page app hosting
+## Security and privacy in this demo
 
-The app uses `BrowserRouter`. Static hosts need a fallback to `index.html` for unknown paths (on GitHub Pages, copy `index.html` to `404.html` or switch to `HashRouter` in `src/main.jsx`).
+- Business profiles use Supabase Auth and database row-level security. Each profile is readable and writable only by its owning account.
+- Synthetic sample workspaces and transaction records stay in this browser's `localStorage`, with separate storage scopes for each signed-in account. Sample records are read-only, labeled synthetic, and stored separately from that account's own ledger.
+- Agent history records the event type and outcome, not the raw note text.
+- User transaction records are still a local prototype layer. They are not yet backed by a shared database, so continue using synthetic transaction data only.
+- Do not enter real business, identity, tax or payment information.
+- Security response headers are configured in `vercel.json`. If the optional API is hosted separately, allow only the app origin and avoid wildcard CORS.
 
-## Not yet done
+## Team work incorporated
 
-- Authentication, real persistence and multi-user data.
-- Automated tests. The mock API and main user flow were checked with throwaway scripts, which are not included.
-- Verification on real devices and browsers. See the hand-off notes for what was and was not checked.
+- **Joshua:** frontend layout and interaction design. This app treats his contribution as the presentation layer; the calculator logic is separate.
+- **Dev B:** shared ZRA reference rules and the original trial calculator concept. The scripts now use one shared engine, including annualizing monthly turnover before checking the annual turnover-tax ceiling.
+- **Dev A:** synthetic intent-classifier direction. The compact local classifier is the no-key default; her FastAPI/SVM baseline remains available for separate evaluation.
+- **Head-dev integration:** connects the agent draft flow to the ledger review queue, deterministic dashboard/calculation tools, sample activity trail, dark workspace UX, Vercel routing and headers, and validation.
+
+## Recommended next enhancements
+
+1. **Local-language experience:** co-design consented Bemba, Nyanja, and other phrase sets with traders; show the recognized transcript and let the user correct it before any draft is created.
+2. **Receipt capture:** add OCR that highlights extracted fields and asks the owner to confirm uncertain values; never infer tax treatment from an image alone.
+3. **Connectivity resilience:** queue signed, duplicate-safe SMS/USSD events and sync them when data service returns, using a Zamtel sandbox before any live integration.
+4. **Tax rules governance:** have Finance approve versioned rules and worked examples, then lock them with regression tests before showing payable amounts.
+5. **Production security:** move transaction records from browser storage into owner-scoped Supabase tables, then add audit history and retention controls before accepting real business records.
+
+## Not production-ready yet
+
+Email and Google authentication, owner-scoped business profiles, and the business onboarding flow are implemented in the app. Email signup and Google OAuth still need their provider settings enabled in the connected Supabase project. Durable tenant-isolated transaction storage, verified tax rules and eligibility logic, real-world and local-language model evaluation, receipt OCR, Zamtel USSD/SMS/connectivity, and ZRA integration remain future layers. No AI prediction can confirm a transaction or determine tax payable.

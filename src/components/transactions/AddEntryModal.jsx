@@ -5,7 +5,7 @@ import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 
 export default function AddEntryModal({ open, onClose }) {
-  const { submitEntry } = useData();
+  const { submitEntry, businessProfile } = useData();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -19,7 +19,8 @@ export default function AddEntryModal({ open, onClose }) {
 
   return (
     <Modal open={open} onClose={onClose} title="Add a business entry" description="Write it the way you would say it. You confirm each line before it counts.">
-      <EntryBox id="modal-entry-text" autoFocus onSubmit={handleSubmit} />
+      <EntryBox id="modal-entry-text" autoFocus language={businessProfile?.language || 'English'} onSubmit={handleSubmit} />
     </Modal>
   );
 }
+

@@ -4,7 +4,7 @@ export default function RegimeComparison({ regimes }) {
   return (
     <div className="grid gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3">
       {regimes.map((regime) => (
-        <div key={regime.id} className="flex flex-col bg-white p-4 sm:p-5">
+        <div key={regime.id} className="flex flex-col bg-[#121a1b] p-4 sm:p-5">
           <h3 className="text-[15px] font-bold">{regime.name}</h3>
           <p className="mt-0.5 text-[13px] text-ink-muted">{regime.basis}</p>
           <p className="mt-4 text-[13px] font-semibold text-ink-muted">{regime.estimateTitle || 'Estimate'}</p>

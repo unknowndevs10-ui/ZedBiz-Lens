@@ -5,18 +5,23 @@ import '@fontsource-variable/manrope';
 import './styles/index.css';
 import App from './App';
 import { DataProvider } from './context/DataContext';
+import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import LoadingScene from './components/common/LoadingScene';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <ToastProvider>
-        <DataProvider>
-          <Suspense fallback={null}>
-            <App />
-          </Suspense>
-        </DataProvider>
+        <AuthProvider>
+          <DataProvider>
+            <Suspense fallback={<LoadingScene label="Preparing your workspace" />}>
+              <App />
+            </Suspense>
+          </DataProvider>
+        </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
   </StrictMode>,
 );
+

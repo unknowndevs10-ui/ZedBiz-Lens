@@ -1,5 +1,5 @@
-// Tiny dependency-free PDF writer (Helvetica, ASCII text, A4). It exists so the DEMO
-// report download produces a real file without adding a PDF library.
+// Tiny dependency-free PDF writer (Helvetica, ASCII text, A4). It keeps report
+// downloads lightweight and works without adding a large PDF library.
 // Dev B's generators replace this - see services/reportService.js.
 const PAGE_W = 595;
 const PAGE_H = 842;
@@ -32,7 +32,7 @@ function wrap(text, size, width) {
 /**
  * blocks: { text, size?, bold?, gapBefore? } | { left, right, bold?, size? } | { rule: true }
  */
-export function buildSimplePdf({ headerLabel = 'DEMO - synthetic data', blocks }) {
+export function buildSimplePdf({ headerLabel = 'WORKSPACE RECORDS', blocks }) {
   const pages = [[]];
   let y = PAGE_H - 92;
   const ops = () => pages[pages.length - 1];
@@ -105,3 +105,4 @@ export function buildSimplePdf({ headerLabel = 'DEMO - synthetic data', blocks }
   pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   return new Blob([pdf], { type: 'application/pdf' });
 }
+

@@ -21,7 +21,7 @@ export default function EntryReviewGroup({ source, items, onConfirm, onEdit, onR
   }
 
   return (
-    <section className="rounded-lg border border-line bg-white shadow-card" aria-label="Entry awaiting review">
+    <section className="rounded-lg border border-line bg-[#121a1b] shadow-card" aria-label="Entry awaiting review">
       <div className="border-b border-line p-4 sm:p-5">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="flex items-center gap-1.5 text-[13px] font-bold text-ink-muted">

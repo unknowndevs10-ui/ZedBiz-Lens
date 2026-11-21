@@ -1,39 +1,14 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Scissors, ShoppingBasket, Store } from 'lucide-react';
+import { ArrowRight, CircleHelp, ShieldCheck } from 'lucide-react';
 import Button from '../common/Button';
-import { useData } from '../../context/DataContext';
-
-const ICONS = { retail: Store, salon: Scissors, market: ShoppingBasket };
 
 export default function AudienceSection() {
-  const { businesses, setBusinessId } = useData();
-  const navigate = useNavigate();
-
-  function openDemo(id) {
-    setBusinessId(id);
-    navigate('/app/dashboard');
-  }
-
   return (
-    <section id="built-for" className="scroll-mt-28">
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
-        <h2 className="max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">Built for the way small businesses really work</h2>
-        <p className="mt-3 max-w-xl text-ink-muted">Open a demo business to explore the dashboard. All three use synthetic data.</p>
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
-          {businesses.map((b) => {
-            const Icon = ICONS[b.id] || Store;
-            return (
-              <div key={b.id} className="flex flex-col rounded-lg border border-line bg-white p-5 shadow-card">
-                <Icon className="h-5 w-5 text-brand" aria-hidden="true" />
-                <h3 className="mt-3 text-[15px] font-bold">{b.kind}</h3>
-                <p className="text-[13px] font-semibold text-ink-muted">{b.name} · {b.location}</p>
-                <p className="mt-2 flex-1 text-sm text-ink-muted">{b.summary}</p>
-                <Button variant="secondary" size="sm" icon={ArrowRight} className="mt-4 self-start" onClick={() => openDemo(b.id)}>Explore this demo</Button>
-              </div>
-            );
-          })}
-        </div>
+    <section id="trust" className="scroll-mt-28 border-b border-line bg-[#101718]">
+      <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:py-20">
+        <div><p className="eyebrow">Responsible by design</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-tight">Useful guidance, clear boundaries.</h2><p className="mt-4 max-w-2xl text-sm leading-6 text-ink-muted">ZedBiz helps organize records and highlight questions worth checking. It doesn't file returns, determine a legal tax position or replace ZRA and qualified finance advice. Each signal shows what it used and what still needs a person to confirm.</p><div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-ink-muted"><span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-brand-700" /> Private account workspaces</span><span className="inline-flex items-center gap-2"><CircleHelp className="h-4 w-4 text-accent" /> Synthetic values are labeled</span></div></div>
+        <Button to="/login" variant="secondary" icon={ArrowRight}>Team sign in</Button>
       </div>
     </section>
   );
 }
+

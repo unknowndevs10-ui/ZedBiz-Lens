@@ -2,10 +2,10 @@ import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 const VARIANTS = {
-  primary: 'bg-brand text-white hover:bg-brand-700 shadow-card',
-  secondary: 'bg-white text-ink border border-line hover:bg-brand-50 hover:border-brand-200 shadow-card',
+  primary: 'bg-brand text-white hover:bg-[#195a57] shadow-card',
+  secondary: 'bg-[#121a1b] text-ink border border-line hover:bg-brand-50 hover:border-brand-200 shadow-card',
   ghost: 'text-ink-muted hover:bg-brand-50 hover:text-ink',
-  danger: 'bg-white text-danger border border-danger/30 hover:bg-danger/5',
+  danger: 'bg-[#121a1b] text-danger border border-danger/30 hover:bg-danger/5',
   accent: 'bg-accent text-ink hover:bg-accent-400 shadow-card',
 };
 const SIZES = {
