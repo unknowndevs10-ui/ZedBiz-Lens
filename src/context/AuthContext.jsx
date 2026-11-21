@@ -28,26 +28,20 @@ export function AuthProvider({ children }) {
       .eq('email', teamEmail)
       .eq('active', true)
       .maybeSingle();
-    if (accessCheckError || !member) {
-      setIsTeamMember(false);
-      setBusinessProfile(null);
-      setProfileComplete(false);
-      setAccessError(accessCheckError ? 'Could not verify team access. Please try again.' : 'This email is not on the UnknownDevs access list.');
-      setStatus('denied');
-      return false;
-    }
+    // Team membership is retained for internal labels and future team-only features.
+    // A business account can use its own profile even when it is not on that list.
+    setIsTeamMember(Boolean(member) && !accessCheckError);
     const { data, error: profileError } = await supabase
       .from('business_profiles')
       .select('profile, completed')
       .eq('user_id', activeSession.user.id)
       .maybeSingle();
     if (profileError) {
-      setIsTeamMember(true);
+      setIsTeamMember(Boolean(member) && !accessCheckError);
       setAccessError('Your business profile could not be loaded. Check the connection and try again.');
       setStatus('error');
       return false;
     }
-    setIsTeamMember(true);
     setBusinessProfile(data?.profile || null);
     setProfileComplete(Boolean(data?.completed));
     setAccessError('');
@@ -98,11 +92,34 @@ export function AuthProvider({ children }) {
     setSession(data.session);
     const allowed = await checkAccess(data.session);
     if (!allowed) {
-      await supabase.auth.signOut();
-      throw new Error('This account is not on the active UnknownDevs access list.');
+      throw new Error('Your business profile could not be loaded. Check your connection and try again.');
     }
     return data;
-  }, [checkAccess, accessError]);
+  }, [checkAccess]);
+
+  const signUp = useCallback(async (email, password) => {
+    if (!supabase) throw new Error('Account creation is not configured yet.');
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    });
+    if (error) throw error;
+    if (data.session) {
+      setSession(data.session);
+      await checkAccess(data.session);
+    }
+    return { ...data, emailConfirmationRequired: !data.session };
+  }, [checkAccess]);
+
+  const signInWithGoogle = useCallback(async () => {
+    if (!supabase) throw new Error('Google sign-in is not configured yet.');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/login` },
+    });
+    if (error) throw error;
+  }, []);
 
   const signOut = useCallback(async () => {
     if (!supabase) return;
@@ -160,12 +177,14 @@ export function AuthProvider({ children }) {
     profileComplete,
     accessError,
     signIn,
+    signUp,
+    signInWithGoogle,
     signOut,
     requestPasswordReset,
     setAccountPassword,
     saveBusinessProfile,
     supabaseConfigured,
-  }), [session, status, isTeamMember, businessProfile, profileComplete, accessError, signIn, signOut, requestPasswordReset, setAccountPassword, saveBusinessProfile]);
+  }), [session, status, isTeamMember, businessProfile, profileComplete, accessError, signIn, signUp, signInWithGoogle, signOut, requestPasswordReset, setAccountPassword, saveBusinessProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
