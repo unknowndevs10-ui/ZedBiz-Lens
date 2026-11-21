@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Sidebar({ onAddEntry }) {
-  const { pendingCount } = useData();
+  const { pendingCount, isSyntheticDemo } = useData();
   const { signOut } = useAuth();
   const navigate = useNavigate();
   return (
@@ -18,9 +18,7 @@ export default function Sidebar({ onAddEntry }) {
         <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-ink-muted">Your workspace</p>
         <p className="mt-1 truncate text-sm font-bold text-ink">One business. Clearer books.</p>
       </div>
-      <Button className="mt-4 w-full" icon={Plus} onClick={onAddEntry}>
-        Add entry
-      </Button>
+      {!isSyntheticDemo && <Button className="mt-4 w-full" icon={Plus} onClick={onAddEntry}>Add entry</Button>}
 
       <nav aria-label="Main" className="mt-6 flex flex-col gap-1">
         {NAV_ITEMS.map(({ to, label, icon: Icon, badge }) => (
