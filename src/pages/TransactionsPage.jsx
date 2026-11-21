@@ -23,7 +23,7 @@ const sortTransactions = (list) => [...list].sort((a, b) => b.date.localeCompare
 
 export default function TransactionsPage() {
   const { openAddEntry } = useOutletContext();
-  const { transactions, status, error, reload, business, confirmTransaction, rejectTransaction, updateTransaction, confirmMany, rejectMany } = useData();
+  const { transactions, status, error, reload, business, isSyntheticDemo, confirmTransaction, rejectTransaction, updateTransaction, confirmMany, rejectMany } = useData();
   const { toast } = useToast();
   const [editing, setEditing] = useState(null);
   const [tab, setTab] = useState('confirmed');
@@ -70,9 +70,9 @@ export default function TransactionsPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Transactions</h1>
-          <p className="mt-1 text-sm text-ink-muted">{business ? `${business.name} · ` : ''}Review new entries, then manage your ledger.</p>
+          <p className="mt-1 text-sm text-ink-muted">{business ? `${business.name} � ` : ''}Review new entries, then manage your ledger.</p>
         </div>
-        <Button icon={Plus} onClick={openAddEntry} className="hidden sm:inline-flex">Add entry</Button>
+        {!isSyntheticDemo && <Button icon={Plus} onClick={openAddEntry} className="hidden sm:inline-flex">Add entry</Button>}
       </header>
 
       {status === 'loading' && !transactions.length ? (
@@ -88,7 +88,7 @@ export default function TransactionsPage() {
             </h2>
             {pendingGroups.length === 0 ? (
               <Card>
-                <EmptyState icon={Inbox} title="Nothing waiting for review" description="New entries appear here so you can confirm, edit or reject each line before it counts." action={<Button icon={Plus} onClick={openAddEntry}>Add an entry</Button>} />
+                <EmptyState icon={Inbox} title="Nothing waiting for review" description={isSyntheticDemo ? 'Sample records are confirmed and read only.' : 'New entries appear here so you can confirm, edit or reject each line before it counts.'} action={!isSyntheticDemo && <Button icon={Plus} onClick={openAddEntry}>Add an entry</Button>} />
               </Card>
             ) : (
               <div className="space-y-4">
@@ -119,7 +119,7 @@ export default function TransactionsPage() {
                 <EmptyState icon={Search} title="No transactions match" description="Try another status or clear the search." action={<Button variant="secondary" onClick={() => { setTab('all'); setQuery(''); }}>Show all</Button>} />
               ) : (
                 <>
-                  <div className="border-t border-line"><TransactionTable transactions={visible.slice(0, limit)} onEdit={setEditing} /></div>
+                  <div className="border-t border-line"><TransactionTable transactions={visible.slice(0, limit)} onEdit={setEditing} readOnly={isSyntheticDemo} /></div>
                   {visible.length > limit && (
                     <div className="border-t border-line p-3 text-center">
                       <Button variant="ghost" onClick={() => setLimit((l) => l + PAGE_SIZE)}>Show more ({visible.length - limit} left)</Button>
@@ -143,3 +143,4 @@ export default function TransactionsPage() {
     </div>
   );
 }
+
