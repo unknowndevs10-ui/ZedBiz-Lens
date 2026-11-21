@@ -51,6 +51,14 @@ export const BUSINESSES = [
   },
 ];
 
+export function chooseSyntheticBusiness(profile = {}) {
+  const type = String(profile.businessType || '').toLowerCase();
+  if (profile.businessFormality === 'informal' || /market|trader|produce|agric/.test(type)) return BUSINESSES.find((business) => business.id === 'market');
+  if (/salon|beauty|personal care|hair/.test(type)) return BUSINESSES.find((business) => business.id === 'salon');
+  if (/service|professional|transport|electrical|solar/.test(type)) return BUSINESSES.find((business) => business.id === 'solar-sme');
+  return BUSINESSES.find((business) => business.id === 'retail');
+}
+
 // Recurring patterns used to generate 120 days of synthetic history.
 const RULES = {
   retail: [
