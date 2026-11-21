@@ -29,6 +29,16 @@ export function normalizeTransaction(raw) {
 
 export const transactionService = {
   setUserScope: (userId) => setMockStorageScope(userId),
+  isSyntheticDemoActive: () => config.useMockData && typeof api.isSyntheticDemoActive === 'function' && api.isSyntheticDemoActive(),
+  async enterSyntheticDemo(options) {
+    if (!config.useMockData || typeof api.enterSyntheticDemo !== 'function') {
+      throw new Error('Synthetic sample workspaces are not available in live-data mode.');
+    }
+    return api.enterSyntheticDemo(options);
+  },
+  async exitSyntheticDemo() {
+    if (config.useMockData && typeof api.exitSyntheticDemo === 'function') await api.exitSyntheticDemo();
+  },
   listBusinesses: () => api.listBusinesses(),
 
   async list(businessId) {
