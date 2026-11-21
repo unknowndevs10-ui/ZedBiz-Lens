@@ -40,13 +40,14 @@ export function DataProvider({ children }) {
   const [businessId, setBusinessIdState] = useState(() => readInitialBusiness(userId));
   const [businessProfile, setBusinessProfileState] = useState(() => readStoredProfile(userId));
   const [transactions, setTransactions] = useState([]);
+  const [isSyntheticDemo, setIsSyntheticDemo] = useState(() => transactionService.isSyntheticDemoActive());
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [error, setError] = useState(null);
   const [version, setVersion] = useState(0);
   const requestRef = useRef(0);
 
   useEffect(() => {
-    transactionService.setUserScope(userId);
+    setIsSyntheticDemo(transactionService.setUserScope(userId));
     setAgentLogScope(userId);
     const profile = cloudProfile || readStoredProfile(userId);
     if (cloudProfile) {
@@ -75,7 +76,7 @@ export function DataProvider({ children }) {
       setError(err);
       setStatus('error');
     }
-  }, [businessId]);
+  }, [businessId, userId]);
 
   useEffect(() => {
     load();
@@ -123,49 +124,54 @@ export function DataProvider({ children }) {
 
   const submitEntry = useCallback(
     async (text) => {
+      if (isSyntheticDemo) throw new Error('This is a read-only sample workspace. Return to your business ledger to add real entries.');
       const result = await transactionService.submitEntry({ businessId, text });
       setTransactions((list) => [...result.transactions, ...list]);
       return result;
     },
-    [businessId],
+    [businessId, isSyntheticDemo],
   );
 
   const submitAgentDraft = useCallback(
     async ({ text, draft }) => {
+      if (isSyntheticDemo) throw new Error('This is a read-only sample workspace. Return to your business ledger to add real entries.');
       const result = await transactionService.submitAgentDraft({ businessId, text, draft });
       setTransactions((list) => [...result.transactions, ...list]);
       return result;
     },
-    [businessId],
+    [businessId, isSyntheticDemo],
   );
 
   const updateTransaction = useCallback(
     async (id, patch) => {
+      if (isSyntheticDemo) throw new Error('Sample records are read-only. Return to your business ledger to edit entries.');
       const tx = await transactionService.update(id, patch);
       replaceOne(tx);
       if (tx.status === 'confirmed') bump();
       return tx;
     },
-    [replaceOne, bump],
+    [replaceOne, bump, isSyntheticDemo],
   );
 
   const confirmTransaction = useCallback(
     async (id, patch) => {
+      if (isSyntheticDemo) throw new Error('Sample records are read-only. Return to your business ledger to confirm entries.');
       const tx = await transactionService.confirm(id, patch);
       replaceOne(tx);
       bump();
       return tx;
     },
-    [replaceOne, bump],
+    [replaceOne, bump, isSyntheticDemo],
   );
 
   const rejectTransaction = useCallback(
     async (id) => {
+      if (isSyntheticDemo) throw new Error('Sample records are read-only. Return to your business ledger to reject entries.');
       const tx = await transactionService.reject(id);
       replaceOne(tx);
       return tx;
     },
-    [replaceOne],
+    [replaceOne, isSyntheticDemo],
   );
 
   const resolveMany = useCallback(
@@ -178,17 +184,31 @@ export function DataProvider({ children }) {
   );
   const confirmMany = useCallback(
     async (ids) => {
-      const results = await resolveMany(ids, (id) => transactionService.confirm(id));
+      const results = await resolveMany(ids, (id) => confirmTransaction(id));
       bump();
       return results;
     },
-    [resolveMany, bump],
+    [resolveMany, confirmTransaction, bump],
   );
-  const rejectMany = useCallback((ids) => resolveMany(ids, (id) => transactionService.reject(id)), [resolveMany]);
+  const rejectMany = useCallback((ids) => resolveMany(ids, (id) => rejectTransaction(id)), [resolveMany, rejectTransaction]);
 
   const resetDemoData = useCallback(async () => {
     await transactionService.resetDemo();
     clearAgentEvents();
+    await load();
+    bump();
+  }, [load, bump]);
+
+  const enterSyntheticDemo = useCallback(async () => {
+    await transactionService.enterSyntheticDemo({ businessId, profile: businessProfile || {} });
+    setIsSyntheticDemo(true);
+    await load();
+    bump();
+  }, [businessId, businessProfile, load, bump]);
+
+  const exitSyntheticDemo = useCallback(async () => {
+    await transactionService.exitSyntheticDemo();
+    setIsSyntheticDemo(false);
     await load();
     bump();
   }, [load, bump]);
@@ -203,6 +223,7 @@ export function DataProvider({ children }) {
       setBusinessId,
       saveBusinessProfile,
       transactions,
+      isSyntheticDemo,
       pendingCount,
       status,
       error,
@@ -216,8 +237,10 @@ export function DataProvider({ children }) {
       confirmMany,
       rejectMany,
       resetDemoData,
+      enterSyntheticDemo,
+      exitSyntheticDemo,
     };
-  }, [businesses, businessId, setBusinessId, businessProfile, saveBusinessProfile, transactions, status, error, version, load, submitEntry, submitAgentDraft, updateTransaction, confirmTransaction, rejectTransaction, confirmMany, rejectMany, resetDemoData]);
+  }, [businesses, businessId, setBusinessId, businessProfile, saveBusinessProfile, transactions, isSyntheticDemo, status, error, version, load, submitEntry, submitAgentDraft, updateTransaction, confirmTransaction, rejectTransaction, confirmMany, rejectMany, resetDemoData, enterSyntheticDemo, exitSyntheticDemo]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
