@@ -35,12 +35,12 @@ function AuthLinkRedirect() {
   return null;
 }
 
-function RequireTeamAccess({ children }) {
-  const { user, status, isTeamMember, profileComplete } = useAuth();
+function RequireAccountAccess({ children }) {
+  const { user, status, profileComplete } = useAuth();
   const location = useLocation();
   if (status === 'loading' || status === 'checking') return <LoadingScene label="Securing your workspace" />;
   if (!user || status === 'signed_out' || status === 'unconfigured') return <Navigate to="/login" state={{ from: location.pathname }} replace />;
-  if (status === 'denied' || status === 'error' || !isTeamMember) return <Navigate to="/login?denied=1" replace />;
+  if (status === 'error') return <Navigate to="/login?error=profile" replace />;
   if (!profileComplete && location.pathname !== '/app/profile') return <Navigate to="/app/profile" replace />;
   return children;
 }
@@ -54,7 +54,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/workspace" element={<Navigate to="/app/dashboard" replace />} />
-        <Route path="/app" element={<RequireTeamAccess><AppShell /></RequireTeamAccess>}>
+        <Route path="/app" element={<RequireAccountAccess><AppShell /></RequireAccountAccess>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
