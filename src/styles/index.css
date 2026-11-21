@@ -39,6 +39,19 @@
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
+  .loading-scene { display: grid; place-items: center; }
+  .loading-scene__content { display: flex; width: min(100%, 22rem); flex-direction: column; align-items: center; }
+  .loading-scene__mark { animation: loading-mark-in 700ms cubic-bezier(.2,.8,.2,1) both, loading-mark-glow 2.2s ease-in-out 700ms infinite; }
+  .loading-scene__wave { display: flex; height: 54px; align-items: center; justify-content: center; gap: 5px; margin-top: 24px; }
+  .loading-scene__wave span { width: 3px; height: var(--wave-height); border-radius: 999px; background: #64aaa4; opacity: .78; transform: scaleY(.35); animation: loading-wave 1.05s ease-in-out var(--wave-delay) infinite alternate; }
+  .loading-scene__wave span:nth-child(5n + 3) { background: #e0a84b; }
+  .loading-scene__label { margin-top: 13px; color: #a3b1b0; font-size: 13px; font-weight: 600; letter-spacing: .01em; text-align: center; }
+  .loading-scene__track { width: 152px; height: 2px; overflow: hidden; margin-top: 18px; border-radius: 999px; background: #202a2b; }
+  .loading-scene__track span { display: block; width: 42%; height: 100%; border-radius: inherit; background: #64aaa4; animation: loading-track 1.55s ease-in-out infinite; }
+  @keyframes loading-mark-in { from { opacity: 0; transform: translateY(7px) scale(.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes loading-mark-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(100,170,164,0)); } 50% { filter: drop-shadow(0 0 13px rgba(100,170,164,.18)); } }
+  @keyframes loading-wave { from { transform: scaleY(.28); opacity: .48; } to { transform: scaleY(1); opacity: .95; } }
+  @keyframes loading-track { 0% { transform: translateX(-120%); } 100% { transform: translateX(360%); } }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -50,5 +63,9 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .loading-scene__mark,
+  .loading-scene__wave span,
+  .loading-scene__track span { animation: none !important; }
+  .loading-scene__wave span { transform: none; }
 }
 
