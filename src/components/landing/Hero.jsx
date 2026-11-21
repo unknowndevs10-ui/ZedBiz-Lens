@@ -4,12 +4,12 @@ import Button from '../common/Button';
 
 const slides = [
   {
-    eyebrow: 'For Zambia's business community',
+    eyebrow: 'For business owners in Zambia',
     title: <>Zambia's businesses, <span>connected.</span></>,
     description: 'From market stalls to neighborhood shops, bring everyday business records into a clearer picture with ZedBiz Lens.',
     image: 'https://images.pexels.com/photos/28112436/pexels-photo-28112436.jpeg?auto=compress&cs=tinysrgb&w=1800',
     alt: 'Market trader selling tomatoes at an outdoor stall',
-    credit: 'Photo: Kayode Adedeji � Pexels',
+    credit: 'Photo: Kayode Adedeji - Pexels',
   },
   {
     eyebrow: 'A clearer view of daily trade',
@@ -17,15 +17,15 @@ const slides = [
     description: 'Keep sales, costs and business activity together, so owners can see what is happening and choose their next step.',
     image: 'https://images.pexels.com/photos/20068076/pexels-photo-20068076.jpeg?auto=compress&cs=tinysrgb&w=1800',
     alt: 'Small business owner standing at an outdoor market stall',
-    credit: 'Photo: Victor Oluwayoju � Pexels',
+    credit: 'Photo: Victor Oluwayoju - Pexels',
   },
   {
     eyebrow: 'One business ecosystem',
     title: <>Independent businesses. <span>One brighter picture.</span></>,
-    description: 'ZedBiz brings practical records and useful insights closer together for Zambia's traders, shops and growing businesses.',
+    description: 'ZedBiz brings practical records and useful insights closer together for traders, shops and growing businesses across Zambia.',
     image: 'https://images.pexels.com/photos/40977565/pexels-photo-40977565.jpeg?auto=compress&cs=tinysrgb&w=1800',
     alt: 'Shopkeeper seated inside a small neighborhood convenience store',
-    credit: 'Photo: Taiye Salawu � Pexels',
+    credit: 'Photo: Taiye Salawu - Pexels',
   },
 ];
 
@@ -84,12 +84,12 @@ export default function Hero() {
             <div className="hero-photo-shade" aria-hidden="true" />
             <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 p-5 sm:p-7">
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-white/65">ZedBiz Lens � Zambia</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-white/65">ZedBiz Lens | Zambia</p>
                 <p className="mt-1.5 text-xl font-extrabold tracking-tight text-white sm:text-2xl">A connected business picture.</p>
               </div>
               <div className="hidden rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-right backdrop-blur-md sm:block">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">The idea</p>
-                <p className="mt-1 text-xs font-bold text-white">Records <span className="text-accent">�</span> insight <span className="text-accent">�</span> growth</p>
+                <p className="mt-1 text-xs font-bold text-white">Records <span className="text-accent">/</span> insight <span className="text-accent">/</span> growth</p>
               </div>
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function Hero() {
           </svg>
           <div className="hero-network__hub" aria-hidden="true"><span className="hero-network__hub-mark">Z</span><span>ZedBiz</span></div>
           {networkNodes.map((node) => <div key={node.label} className={`hero-network__node ${node.className}`} aria-hidden="true"><span />{node.label}</div>)}
-          <span className="hero-photo-credit">{slide.credit} � Representative African stock photography</span>
+          <span className="hero-photo-credit">{slide.credit} | Representative African stock photography</span>
         </div>
       </div>
     </section>
