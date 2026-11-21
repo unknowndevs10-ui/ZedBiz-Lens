@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Open the local Vite URL. The landing page is public; the app workspace requires a Supabase sign-in from an invited UnknownDevs team account. New team members are guided into a five-step business profile setup after accepting their invite.
+Open the local Vite URL. The landing page is public. Users can create an account with email and password or continue with Google, then complete the guided business profile before the dashboard.
 
 ```powershell
 npm test
@@ -42,19 +42,19 @@ The test suite checks the local intent baseline. The calculator tests are in `ag
 - **Reports:** download synthetic financial and illustrative tax-position PDFs from confirmed records.
 - **Dark theme:** a low-glare charcoal workspace keeps the teal and amber brand accents and respects reduced-motion preferences.
 
-## Team access setup still required
+## Account setup still required
 
-### Supabase team access
+### Supabase Auth
 
-The app uses Supabase Auth for email/password sessions. Self-service account creation is not offered in the UI. Add the approved team members from Supabase Dashboard > Authentication > Users using **Invite user**, and keep public signups disabled in Authentication > Settings. The `public.team_members` table is the database allowlist; the app checks it after sign-in. The `public.business_profiles` table stores each member's profile under their Auth user ID with row-level security enabled.
+The app uses Supabase Auth for email/password accounts and Google OAuth. Enable email signups in Supabase Dashboard > Authentication > Settings. For Google sign-in, enable the Google provider under Authentication > Sign In / Providers and add its OAuth client ID and secret. Add `https://zedbiz-lens.vercel.app/login` and your local Vite origin to the Supabase redirect URL allowlist. Google's OAuth client must also allow the Supabase callback URL shown in the provider setup.
 
 1. `.env.example` shows the optional `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` overrides. The connected project's browser-safe URL and publishable key are bundled as defaults so the ZIP and Vercel build can sign in without build-time secrets. Never use a secret/service-role key in Vite.
-2. The migration at `supabase/migrations/202611200001_team_access_and_business_profiles.sql` creates the allowlist and protected profile table. It has been applied to the connected challenge project.
-3. The connected challenge project already has the six approved team entries in `public.team_members`. For a new environment, add the approved team email addresses to that table in Supabase SQL Editor. Keep those addresses in the private project database, not in a public repository.
-4. Set the Supabase Auth Site URL to the local app origin during development, and add the local origin plus the final Vercel URL to the allowed redirect URLs. Invite recipients open the secure link, choose their own password, and then complete onboarding.
+2. `public.business_profiles` stores a profile under each Auth user ID with row-level security. The migration `202611210001_self_service_business_profiles.sql` grants each authenticated user access to their own row only.
+3. `public.team_members` remains an internal role/label list for the UnknownDevs team. It no longer blocks business-account signup or onboarding.
+4. Email signup may require the user to confirm the address before returning to ZedBiz. On first sign-in, the multi-step business setup still runs before the dashboard.
 5. Restart Vite or rebuild `dist` after changing the environment values.
 
-Passwords are set individually through Supabase invite links. Do not share a common password sheet; invite links let each person establish a private password and use the reset flow later.
+Passwords are created per account and reset through the email flow. Do not share a common password sheet.
 
 ## AI and calculation design
 
@@ -95,8 +95,8 @@ Import this repository as a Vite project with the default build command `npm run
 
 ## Security and privacy in this demo
 
-- Team access and business profile records use Supabase Auth and database row-level security. The profile is readable and writable only by its owning team account.
-- Synthetic demo transactions and agent history stay in this browser's `localStorage`, with separate storage scopes for each signed-in team member. Sample records remain labeled synthetic.
+- Business profiles use Supabase Auth and database row-level security. Each profile is readable and writable only by its owning account.
+- Synthetic sample workspaces and transaction records stay in this browser's `localStorage`, with separate storage scopes for each signed-in account. Sample records are read-only, labeled synthetic, and stored separately from that account's own ledger.
 - Agent history records the event type and outcome, not the raw note text.
 - User transaction records are still a local prototype layer. They are not yet backed by a shared database, so continue using synthetic transaction data only.
 - Do not enter real business, identity, tax or payment information.
@@ -119,5 +119,5 @@ Import this repository as a Vite project with the default build command `npm run
 
 ## Not production-ready yet
 
-Invited-team authentication, allowlist authorization, row-level secured business profiles, and the first-user onboarding flow are implemented. Durable tenant-isolated transaction storage, verified tax rules and eligibility logic, real-world and local-language model evaluation, receipt OCR, Zamtel USSD/SMS/connectivity, and ZRA integration remain future layers. No AI prediction can confirm a transaction or determine tax payable.
+Email and Google authentication, owner-scoped business profiles, and the business onboarding flow are implemented in the app. Email signup and Google OAuth still need their provider settings enabled in the connected Supabase project. Durable tenant-isolated transaction storage, verified tax rules and eligibility logic, real-world and local-language model evaluation, receipt OCR, Zamtel USSD/SMS/connectivity, and ZRA integration remain future layers. No AI prediction can confirm a transaction or determine tax payable.
 
