@@ -3,7 +3,8 @@
 import { config } from '../config';
 import { todayISO } from '../utils/format';
 import { extractTransactions } from '../utils/mockExtraction';
-import { buildDashboard, buildTaxPosition } from '../utils/finance';
+import { buildDashboard } from '../utils/finance';
+import { calculateTaxReadiness } from './taxEngine';
 import { buildFinancialReportPdf, buildTaxReportPdf } from '../utils/reportPdf';
 import { chooseSyntheticBusiness, generateSeedTransactions } from '../data/mockData';
 
@@ -74,6 +75,13 @@ function customBusiness() {
     }
   } catch { /* the demo still works if storage is unavailable */ }
   return null;
+}
+
+function customBusinessProfile() {
+  try {
+    const profile = JSON.parse(localStorage.getItem(scopedKey(PROFILE_KEY)) || 'null');
+    return profile && typeof profile === 'object' ? profile : {};
+  } catch { return {}; }
 }
 
 const businessById = () => customBusiness() || { id: 'my-business', name: 'My business', kind: 'Business', location: 'Zambia' };
@@ -174,7 +182,7 @@ export const mockApi = {
     const amount = Number(draft?.amount);
     if (source.length < 3 || source.length > 500) throw new Error('The source note must be between 3 and 500 characters.');
     if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000_000_000) throw new Error('Enter an amount greater than zero.');
-    if (!['income', 'expense'].includes(draft?.type)) throw new Error('The agent can only draft an income or expense entry.');
+    if (!['income', 'expense', 'owner_withdrawal'].includes(draft?.type)) throw new Error('The entry type is not supported.');
     if (businessId !== 'my-business') throw new Error('Choose your business workspace first.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(draft?.date || '')) throw new Error('Choose a valid date.');
     const state = load();
@@ -188,6 +196,24 @@ export const mockApi = {
       description: String(draft.description || source).slice(0, 80),
       amount,
       date: draft.date,
+      paymentMethod: ['cash', 'mobile_money', 'credit'].includes(draft.paymentMethod) ? draft.paymentMethod : 'unspecified',
+      reference: String(draft.reference || '').slice(0, 40),
+      counterparty: String(draft.counterparty || '').slice(0, 80),
+      jobName: String(draft.jobName || '').slice(0, 80),
+      feeAmount: Number.isFinite(Number(draft.feeAmount)) ? Math.max(0, Number(draft.feeAmount)) : null,
+      itemName: String(draft.itemName || '').slice(0, 80),
+      unitCost: Number.isFinite(Number(draft.unitCost)) ? Math.max(0, Number(draft.unitCost)) : null,
+      quantity: Number.isFinite(Number(draft.quantity)) ? Math.max(0, Number(draft.quantity)) : null,
+      vatTreatment: ['standard_rated', 'zero_rated', 'exempt', 'out_of_scope', 'unsure'].includes(draft.vatTreatment) ? draft.vatTreatment : 'unsure',
+      amountIncludesVat: draft.amountIncludesVat !== false,
+      taxDeductible: typeof draft.taxDeductible === 'boolean' ? draft.taxDeductible : null,
+      smartInvoiceValid: draft.smartInvoiceValid === true,
+      supplierTpinVerified: draft.supplierTpinVerified === true,
+      inputVatAmount: Number.isFinite(Number(draft.inputVatAmount)) ? Math.max(0, Number(draft.inputVatAmount)) : null,
+      inputInvoiceDate: /^\d{4}-\d{2}-\d{2}$/.test(draft.inputInvoiceDate || '') ? draft.inputInvoiceDate : null,
+      createdBy: String(draft.createdBy || 'owner').slice(0, 80),
+      aiExplanation: String(draft.aiExplanation || '').slice(0, 220),
+      aiSource: String(draft.aiSource || '').slice(0, 60),
       confidence: Number.isFinite(Number(draft.confidence)) ? Math.min(1, Math.max(0, Number(draft.confidence))) : null,
       status: 'pending',
       source,
@@ -225,7 +251,7 @@ export const mockApi = {
 
   async getTaxPosition({ businessId }) {
     await wait();
-    return buildTaxPosition(currentTransactions().filter((transaction) => transaction.businessId === businessId && transaction.status === 'confirmed'));
+    return calculateTaxReadiness(currentTransactions().filter((transaction) => transaction.businessId === businessId), customBusinessProfile());
   },
 
   async downloadFinancialReport({ businessId, period }) {
@@ -238,7 +264,7 @@ export const mockApi = {
   async downloadTaxReport({ businessId }) {
     await wait(600);
     const business = currentBusiness();
-    const tax = buildTaxPosition(currentTransactions().filter((transaction) => transaction.businessId === businessId && transaction.status === 'confirmed'));
+    const tax = calculateTaxReadiness(currentTransactions().filter((transaction) => transaction.businessId === businessId), customBusinessProfile());
     return { blob: buildTaxReportPdf(business, tax), filename: `zedbiz-tax-position-${business.id}.pdf` };
   },
 

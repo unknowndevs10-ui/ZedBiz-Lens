@@ -4,12 +4,15 @@ import { addDays, toISODate } from '../utils/format';
 export const INCOME_CATEGORIES = ['Sales', 'Services', 'Other income'];
 export const EXPENSE_CATEGORIES = [
   'Stock purchases',
+  'Spoilage & wastage',
+  'Mobile money fees',
   'Transport',
   'Rent',
   'Utilities',
   'Wages',
   'Market fees',
   'Other expenses',
+  'Owner personal withdrawal',
 ];
 
 export const BUSINESSES = [
@@ -163,3 +166,4 @@ export function generateSeedTransactions(business, days = 120) {
   }
   return transactions;
 }
+

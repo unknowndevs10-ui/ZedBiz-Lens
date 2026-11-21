@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sklearn.metrics.pairwise import cosine_similarity
 from calculations import calculate_financial_summary
+from ai_rules import parse_batch_text, revenue_baseline
 
 ROOT = Path(__file__).resolve().parent
 MODEL_PATH = ROOT / "artifacts" / "intent_pipeline.joblib"
@@ -47,6 +48,12 @@ class InterpretRequest(BaseModel):
     language: str = Field(default="en", max_length=12)
 
 
+class BatchParseRequest(BaseModel):
+    text: str = Field(min_length=3, max_length=1200)
+    language: str = Field(default="mixed", max_length=24)
+    business_type: str = Field(default="other", max_length=40)
+
+
 class FinancialCalculationRequest(BaseModel):
     revenue: float = Field(ge=0, le=1_000_000_000_000, allow_inf_nan=False)
     cost_of_goods_sold: float = Field(ge=0, le=1_000_000_000_000, allow_inf_nan=False)
@@ -55,6 +62,17 @@ class FinancialCalculationRequest(BaseModel):
     period: Literal["monthly", "annual"]
     fixed_costs: float | None = Field(default=None, ge=0, le=1_000_000_000_000, allow_inf_nan=False)
     variable_costs: float | None = Field(default=None, ge=0, le=1_000_000_000_000, allow_inf_nan=False)
+
+
+class ForecastPoint(BaseModel):
+    date: str = Field(min_length=10, max_length=10)
+    revenue: float = Field(ge=0, le=1_000_000_000_000, allow_inf_nan=False)
+
+
+class ForecastRequest(BaseModel):
+    history: list[ForecastPoint] = Field(max_length=500)
+    horizon_days: int = Field(default=30, ge=1, le=90)
+    business_type: str = Field(default="other", max_length=40)
 
 
 class TransactionDraft(BaseModel):
@@ -99,6 +117,12 @@ def extract_amount(text: str) -> tuple[float | None, str | None]:
     return None, "What amount should I put in this draft?"
 
 
+@app.post("/api/v1/ai/parse-batch")
+def parse_batch(request: BatchParseRequest) -> dict:
+    """Phrase-based batch drafts. All financial entries require owner confirmation."""
+    return parse_batch_text(request.text)
+
+
 @app.get("/health")
 def health() -> dict:
     load_model()
@@ -122,6 +146,13 @@ def financial_summary(request: FinancialCalculationRequest) -> dict:
         fixed_costs=request.fixed_costs,
         variable_costs=request.variable_costs,
     )
+
+
+@app.post("/forecast/revenue")
+def revenue_forecast(request: ForecastRequest) -> dict:
+    """Transparent arithmetic baseline. This endpoint does not load or claim XGBoost."""
+    history = [point.model_dump() for point in request.history]
+    return revenue_baseline(history, request.horizon_days, request.business_type)
 
 
 @app.post("/api/v1/interpret", response_model=InterpretResponse)
@@ -165,7 +196,7 @@ def interpret(request: InterpretRequest) -> InterpretResponse:
         return InterpretResponse(
             model_version=METADATA.get("model_version"), training_data_status=METADATA.get("training_data", "unknown"),
             intent="unknown", draft=None, needs_clarification=True, needs_owner_confirmation=True,
-            question="I’m not sure I understood that. Is it a sale, an expense, or a request for your summary?",
+            question="I'm not sure I understood that. Is it a sale, an expense, or a request for your summary?",
             review_reasons=reasons,
         )
     if intent == "summary":
@@ -179,7 +210,7 @@ def interpret(request: InterpretRequest) -> InterpretResponse:
         return InterpretResponse(
             model_version=METADATA.get("model_version"), training_data_status=METADATA.get("training_data", "unknown"),
             intent="unknown", draft=None, needs_clarification=True, needs_owner_confirmation=True,
-            question="I’m not sure what business task you mean. Is this a sale, an expense, or a summary request?",
+            question="I'm not sure what business task you mean. Is this a sale, an expense, or a summary request?",
             review_reasons=reasons + ["unsupported_or_uncertain_intent"],
         )
 
@@ -196,3 +227,4 @@ def interpret(request: InterpretRequest) -> InterpretResponse:
         question=question,
         review_reasons=reasons,
     )
+

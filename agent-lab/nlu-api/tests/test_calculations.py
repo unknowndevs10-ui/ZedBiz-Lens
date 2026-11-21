@@ -1,6 +1,7 @@
 import unittest
 
 from calculations import calculate_financial_summary, load_tax_rules
+from ai_rules import parse_batch_text, revenue_baseline
 
 
 class FinancialSummaryTests(unittest.TestCase):
@@ -49,6 +50,31 @@ class FinancialSummaryTests(unittest.TestCase):
         self.assertEqual(result["financial_summary"]["break_even"]["status"], "not_calculated")
 
 
+class EmergingCoreTests(unittest.TestCase):
+    def test_batch_parser_returns_separate_unconfirmed_mixed_phrase_drafts(self):
+        result = parse_batch_text("Nagulisa 5 crates ya tomato pa K600, transport K50")
+        self.assertEqual(result["kind"], "drafts")
+        self.assertTrue(result["needs_owner_confirmation"])
+        self.assertEqual([row["draft"]["amount"] for row in result["drafts"]], [600, 50])
+        self.assertEqual(result["drafts"][0]["draft"]["quantity"], 5)
+        self.assertEqual(result["drafts"][0]["draft"]["itemName"], "tomato")
+
+    def test_tax_question_is_not_answered_by_batch_parser(self):
+        result = parse_batch_text("How much VAT do I owe on K500?")
+        self.assertEqual(result["kind"], "clarify")
+        self.assertEqual(result["drafts"], [])
+
+    def test_forecast_api_is_honest_baseline_and_uses_calendar_span(self):
+        result = revenue_baseline([
+            {"date": "2026-01-01", "revenue": 100},
+            {"date": "2026-01-03", "revenue": 300},
+        ], horizon_days=30)
+        self.assertEqual(result["predicted_revenue"], 4000)
+        self.assertEqual(result["source"], "synthetic-baseline")
+        self.assertIn("No XGBoost model is connected", result["notice"])
+
+
 if __name__ == "__main__":
 
     unittest.main()
+

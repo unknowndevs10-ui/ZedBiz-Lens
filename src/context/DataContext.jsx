@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { transactionService } from '../services/transactionService';
+import { parseBusinessWrapUp } from '../services/aiEngine';
+import { operationsStore } from '../services/operationsStore';
+import { config } from '../config';
 import { clearAgentEvents, setAgentLogScope } from '../services/agentLog';
 import { useAuth } from './AuthContext';
 
@@ -107,6 +110,9 @@ export function DataProvider({ children }) {
       pacraStatus: profile.pacraStatus || 'unsure',
       zraStatus: profile.zraStatus || 'unsure',
       vatStatus: profile.vatStatus || 'unsure',
+      legalForm: ['sole_trader', 'registered_business_name', 'limited_company', 'partnership'].includes(profile.legalForm) ? profile.legalForm : '',
+      taxActivity: ['retail_trading', 'agriculture', 'services', 'consultancy', 'other'].includes(profile.taxActivity) ? profile.taxActivity : '',
+      vatRegistrationType: ['voluntary', 'statutory', 'unsure'].includes(profile.vatRegistrationType) ? profile.vatRegistrationType : 'unsure',
       formalizationInterest: profile.formalizationInterest || 'unsure',
       goals: Array.isArray(profile.goals) ? profile.goals.filter((goal) => ['records', 'profit', 'cashflow', 'tax_ready', 'growth'].includes(goal)) : ['records', 'profit'],
       biggestChallenge: ['keeping_records', 'pricing', 'stock', 'cashflow', 'customer_credit', 'tax', 'growth'].includes(profile.biggestChallenge) ? profile.biggestChallenge : 'keeping_records',
@@ -125,11 +131,28 @@ export function DataProvider({ children }) {
   const submitEntry = useCallback(
     async (text) => {
       if (isSyntheticDemo) throw new Error('This is a read-only sample workspace. Return to your business ledger to add real entries.');
-      const result = await transactionService.submitEntry({ businessId, text });
-      setTransactions((list) => [...result.transactions, ...list]);
-      return result;
+      const parsed = await parseBusinessWrapUp(text, businessProfile);
+      if (parsed.kind === 'clarify') throw new Error(parsed.message || 'I need one more detail before creating a draft.');
+      const operationRecords = Array.isArray(parsed.operations) ? parsed.operations : [];
+      operationRecords.filter((operation) => operation.type === 'cash_count').forEach((operation) => {
+        operationsStore.saveCashClose(userId, businessId, { date: operation.date, opening: 0, actual: Number(operation.actual), savedAt: new Date().toISOString(), source: 'voice-or-text-note' });
+      });
+      if (!config.useMockData) {
+        const result = await transactionService.submitEntry({ businessId, text });
+        setTransactions((list) => [...result.transactions, ...list]);
+        return { ...result, operations: operationRecords, parsing: parsed };
+      }
+      const prepared = [];
+      for (const item of parsed.drafts || []) {
+        if (item.kind !== 'transaction' || !item.draft) continue;
+        const result = await transactionService.submitAgentDraft({ businessId, text: item.sourceText || text, draft: { ...item.draft, aiExplanation: item.explanation, aiSource: parsed.source, confidence: item.confidence ?? item.draft.confidence } });
+        prepared.push(...result.transactions);
+      }
+      if (!prepared.length && !operationRecords.length) throw new Error(parsed.unparsed?.[0]?.reason || 'I could not prepare a reviewable business draft.');
+      setTransactions((list) => [...prepared, ...list]);
+      return { entryId: prepared[0]?.entryId || `operations-${Date.now()}`, text, transactions: prepared, operations: operationRecords, parsing: parsed };
     },
-    [businessId, isSyntheticDemo],
+    [businessId, businessProfile, userId, isSyntheticDemo],
   );
 
   const submitAgentDraft = useCallback(
@@ -250,3 +273,4 @@ export function useData() {
   if (!ctx) throw new Error('useData must be used inside <DataProvider>');
   return ctx;
 }
+

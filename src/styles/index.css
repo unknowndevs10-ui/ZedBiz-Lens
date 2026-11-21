@@ -9,7 +9,8 @@
   body {
     @apply bg-surface font-sans text-ink antialiased;
     font-feature-settings: 'cv11', 'ss01';
-    background-color: #0b1011;
+    background-image: radial-gradient(ellipse at 6% 0%, rgba(31,111,107,.12), transparent 35%), radial-gradient(ellipse at 100% 22%, rgba(224,168,75,.045), transparent 32%);
+    background-attachment: fixed;
   }
   ::selection {
     background: #b9d7d5;
@@ -28,8 +29,8 @@
   }
   select.field option,
   select.field optgroup {
-    background: #131b1c;
-    color: #e7efee;
+    background: #121a1b;
+    color: #E7EFEE;
   }
   .eyebrow {
     @apply text-[10px] font-extrabold uppercase tracking-[0.18em] text-brand-700;
@@ -53,8 +54,8 @@
   @keyframes loading-wave { from { transform: scaleY(.28); opacity: .48; } to { transform: scaleY(1); opacity: .95; } }
   @keyframes loading-track { 0% { transform: translateX(-120%); } 100% { transform: translateX(360%); } }
 
-  .landing-hero { background: #0b1011; }
-  .landing-hero__glow { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 75% 45%, rgba(31,111,107,.15), transparent 42%); }
+  .landing-hero { background: #0B1011; }
+  .landing-hero__glow { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 75% 45%, rgba(31,111,107,.12), transparent 42%); }
   .hero-copy-enter { animation: hero-copy-enter 450ms cubic-bezier(.2,.7,.2,1) both; }
   .hero-photo-frame { isolation: isolate; }
   .hero-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 42%; animation: hero-photo-enter 950ms cubic-bezier(.2,.7,.2,1) both; }
@@ -81,6 +82,22 @@
   @keyframes hero-line-flow { to { stroke-dashoffset: -120; } }
   @keyframes hero-network-pulse { 0% { opacity: .8; transform: scale(.82); } 90%, 100% { opacity: 0; transform: scale(1.42); } }
   @keyframes hero-node-float { from { translate: 0 0; } to { translate: 0 -5px; } }
+}
+
+.tax-dark { background: #0B1011; color: #E7EFEE; }
+.tax-dark .tax-card { background-color: #121a1b !important; }
+.tax-dark .text-ink { color: #E7EFEE !important; }
+.tax-dark .text-ink-muted { color: #A4B3B2 !important; }
+.tax-dark .field { color-scheme: dark; border-color: #293638; background-color: #121a1b; color: #E7EFEE; }
+.tax-dark .field option { background: #121a1b; color: #E7EFEE; }
+.tax-brief { display: none; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  .tax-brief, .tax-brief * { visibility: visible !important; }
+  .tax-brief { display: block !important; position: absolute; inset: 0 auto auto 0; width: 100%; padding: 24px; color: #111; font: 12pt/1.5 Arial, sans-serif; }
+  .tax-brief h1 { margin: 0 0 8px; font-size: 20pt; }
+  .tax-brief h2 { margin: 20px 0 6px; font-size: 14pt; }
 }
 
 @media (prefers-reduced-motion: reduce) {

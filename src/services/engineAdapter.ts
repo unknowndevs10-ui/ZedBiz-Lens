@@ -8,6 +8,9 @@ export type ReceiptExtraction = {
   expense_amount: number;
   total_zmw: number;
   confidence: number;
+  smart_invoice_valid: boolean | null;
+  supplier_tpin_verified: boolean | null;
+  input_vat_amount: number | null;
   source: 'donut-live' | 'donut-simulated';
 };
 
@@ -40,6 +43,9 @@ function normalizeReceiptPayload(payload: any): ReceiptExtraction {
     expense_amount: Number.isFinite(expense_amount) ? expense_amount : 0,
     total_zmw,
     confidence: Math.min(1, Math.max(0, confidence)),
+    smart_invoice_valid: typeof payload.smart_invoice_valid === 'boolean' ? payload.smart_invoice_valid : null,
+    supplier_tpin_verified: typeof payload.supplier_tpin_verified === 'boolean' ? payload.supplier_tpin_verified : null,
+    input_vat_amount: Number.isFinite(Number(payload.input_vat_amount)) ? Number(payload.input_vat_amount) : null,
     source: 'donut-live',
   };
 }
@@ -63,27 +69,37 @@ export async function extractReceipt(file: File): Promise<ReceiptExtraction> {
     expense_amount: 60,
     total_zmw: 920,
     confidence: 0.72,
+    smart_invoice_valid: null,
+    supplier_tpin_verified: null,
+    input_vat_amount: null,
     source: 'donut-simulated',
   };
 }
 
-export async function predictThirtyDayRevenue(history: Array<{ date: string; revenue: number }>) {
+export async function predictThirtyDayRevenue(history: Array<{ date: string; revenue: number }>, { profile = {} as any } = {}) {
   if (engineUrl) {
     const response = await fetch(`${engineUrl}/forecast/revenue`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ history, horizon_days: 30 }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ history, horizon_days: 30, business_type: profile?.businessType || 'other' }),
     });
     if (!response.ok) throw new Error(`Forecast service returned ${response.status}.`);
     return response.json();
   }
-  const recent = history.slice(-30).map((row) => Math.max(0, Number(row.revenue) || 0));
-  const average = recent.length ? recent.reduce((sum, value) => sum + value, 0) / recent.length : 0;
-  const drift = recent.length > 1 ? (recent[recent.length - 1] - recent[0]) / recent.length : 0;
-  const predicted_revenue = Math.max(0, Math.round((average + drift * 5) * 30 * 100) / 100);
+  const cleaned = history.filter((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.date) && Number.isFinite(Number(row.revenue)) && Number(row.revenue) >= 0)
+    .sort((a, b) => a.date.localeCompare(b.date)).slice(-90);
+  const observed = new Map();
+  cleaned.forEach((row) => observed.set(row.date, (observed.get(row.date) || 0) + Number(row.revenue)));
+  const dates = [...observed.keys()].sort();
+  const spanDays = dates.length ? Math.max(1, Math.round((Date.parse(`${dates.at(-1)}T00:00:00Z`) - Date.parse(`${dates[0]}T00:00:00Z`)) / 86400000) + 1) : 0;
+  const total = [...observed.values()].reduce((sum, value) => sum + value, 0);
+  const dailyAverage = spanDays ? total / spanDays : 0;
+  const predicted_revenue = Math.round(dailyAverage * 30 * 100) / 100;
+  const uncertainty = spanDays >= 30 ? 0.25 : spanDays >= 14 ? 0.4 : 0.6;
   return {
     predicted_revenue,
-    confidence_low: Math.round(predicted_revenue * 0.82 * 100) / 100,
-    confidence_high: Math.round(predicted_revenue * 1.18 * 100) / 100,
-    growth_driver: recent.length ? 'Recent confirmed sales pattern' : 'Not enough confirmed sales history',
+    confidence_low: Math.round(predicted_revenue * (1 - uncertainty) * 100) / 100,
+    confidence_high: Math.round(predicted_revenue * (1 + uncertainty) * 100) / 100,
+    growth_driver: spanDays ? `Mean of confirmed sales across ${spanDays} observed calendar day${spanDays === 1 ? '' : 's'}` : 'Not enough confirmed sales history',
+    history_days: spanDays,
     source: 'synthetic-baseline',
   };
 }
@@ -96,3 +112,4 @@ export function receiptDraft(extraction: ReceiptExtraction) {
     source: extraction.source === 'donut-live' ? 'Donut OCR' : 'Simulated Donut sample',
   };
 }
+

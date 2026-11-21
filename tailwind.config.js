@@ -6,7 +6,7 @@ export default {
       colors: {
         // Approved brand palette
         brand: {
-          DEFAULT: '#1F6F6B', // Calm Teal (white text = 5.9:1)
+          DEFAULT: '#1F6F6B',
           50: '#142322',
           100: '#1D3231',
           200: '#2A4A48',
@@ -16,13 +16,13 @@ export default {
           800: '#A3D9D2',
         },
         accent: {
-          DEFAULT: '#E0A84B', // Amber - always pair with dark text
+          DEFAULT: '#E0A84B',
           50: '#2B2417',
           100: '#42331D',
           400: '#E6B867',
           800: '#F1CD8D',
         },
-        surface: '#0B1011', // Calm charcoal canvas
+        surface: '#0B1011',
         ink: {
           DEFAULT: '#E7EFEE',
           muted: '#A4B3B2',
@@ -52,3 +52,4 @@ export default {
   },
   plugins: [],
 };
+

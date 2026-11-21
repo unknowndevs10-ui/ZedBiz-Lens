@@ -3,6 +3,8 @@ import { ArrowRight, Mic, MicOff } from 'lucide-react';
 import Button from '../common/Button';
 import Notification from '../common/Notification';
 import { Textarea } from '../common/FormControls';
+import { Link } from 'react-router-dom';
+import { formatKwacha } from '../../utils/format';
 
 /** Free-text entry composer. `onSubmit(text)` must return a promise; rejections show inline. */
 export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = false, language = 'English' }) {
@@ -10,6 +12,7 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
+  const [prepared, setPrepared] = useState(null);
   const recognitionRef = useRef(null);
 
   useEffect(() => () => {
@@ -58,7 +61,8 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
     setBusy(true);
     setError('');
     try {
-      await onSubmit(text);
+      const result = await onSubmit(text);
+      setPrepared(result || null);
       setText('');
     } catch (err) {
       setError(err.message || 'We could not process that entry. Try again.');
@@ -80,6 +84,7 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
         onChange={(e) => {
           setText(e.target.value);
           if (error) setError('');
+          if (prepared) setPrepared(null);
         }}
         placeholder="For example: Sold goods for K250 and paid K40 for transport."
         aria-describedby={error ? `${id}-error` : `${id}-hint`}
@@ -106,7 +111,14 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
       <Button type="submit" size="lg" className="mt-5 w-full sm:w-auto" icon={ArrowRight} loading={busy}>
         {busy ? 'Processing' : 'Process entry'}
       </Button>
-      <p className="mt-3 text-xs leading-5 text-ink-muted">This pilot prepares a draft from your note for you to check. Voice recognition is provided by your browser; English is the validated input language, and Bemba/Nyanja recognition still needs native-speaker testing. Use typing if recognition is unclear.</p>
+      {prepared && <section aria-live="polite" className="mt-4 rounded-lg border border-brand-200 bg-[#0e1516] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="eyebrow">AI DRAFT � DETERMINISTIC ZRA MATH</p><h3 className="mt-1 text-sm font-extrabold">{prepared.transactions?.length ? `${prepared.transactions.length} draft${prepared.transactions.length === 1 ? '' : 's'} prepared for review` : 'Business check recorded'}</h3></div><Link to="/app/transactions" className="text-xs font-bold text-brand-700 underline">Open review queue</Link></div>
+        {prepared.transactions?.length > 0 && <ul className="mt-3 space-y-2">{prepared.transactions.map((transaction) => <li key={transaction.id} className="rounded-md border border-line bg-[#121a1b] px-3 py-2.5"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-xs font-bold">{transaction.type === 'owner_withdrawal' ? 'Owner withdrawal' : transaction.type === 'income' ? 'Sale' : 'Expense'} � {transaction.category}</p><p className="mt-0.5 text-xs text-ink-muted">{transaction.description}</p></div><p className="text-sm font-extrabold tabular-nums">{formatKwacha(transaction.amount)}</p></div>{transaction.aiExplanation && <details className="mt-2 border-t border-line pt-2"><summary className="cursor-pointer text-[10px] font-bold text-brand-700">Why AI flagged this</summary><p className="mt-1 text-[11px] leading-5 text-ink-muted">{transaction.aiExplanation}</p></details>}</li>)}</ul>}
+        {prepared.operations?.map((operation, index) => <p key={`${operation.type}-${index}`} className="mt-2 text-xs text-ink-muted">Cash count K{Number(operation.actual).toLocaleString('en-ZM')} recorded for till review. It is not sales or income.</p>)}
+        {prepared.parsing?.unparsed?.length > 0 && <p className="mt-2 text-[11px] leading-5 text-accent">I left {prepared.parsing.unparsed.length} part(s) out of the ledger because they need a clearer amount or description.</p>}
+        <p className="mt-3 border-t border-line pt-2 text-[10px] leading-5 text-ink-muted">These entries stay pending until you review and confirm them. AI can prepare drafts; it cannot change confirmed profit or tax totals.</p>
+      </section>}
+      <p className="mt-3 text-xs leading-5 text-ink-muted">Voice recognition comes from your browser. The local parser recognizes a small synthetic English, Zanglish, Bemba and Nyanja phrase set; it is not yet validated with real trader speech. Check every draft before confirming.</p>
     </form>
   );
 }
