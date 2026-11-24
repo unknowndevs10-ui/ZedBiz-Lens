@@ -34,14 +34,17 @@ The test suite checks the local intent baseline. The calculator tests are in `ag
 ## What the prototype does
 
 - **Record keeping:** generate 120 days of deterministic synthetic activity for a Soweto Market tomato trader, Kabulonga Mini-Mart, Kitwe Auto-Spares Shop and a profitable solar-services SME. Add a note; review, edit, confirm or reject the resulting draft.
-- **Receipt capture:** the capture screen accepts a receipt photo and displays supplier, date, line items, COGS, expenses, total and confidence from a configured extraction service. Without one, it shows a clearly labelled fixture that is not inferred from the image and cannot be saved as a real ledger entry.
-- **Business profile:** a five-step setup asks how to address the user, their role, business type and registration journey, province/market, preferred language, and cash/mobile-money/credit methods. Informal businesses get a formalisation-interest question; registered businesses get self-reported PACRA/TPIN/VAT readiness questions without collecting ID numbers. It creates a clean empty ledger separate from synthetic samples.
+- **Receipt capture:** camera or image upload opens a receipt review. A configured vision service can extract fields; without one, the owner enters supplier, date, amount, stock cost, other business cost and optional item prices manually. No fixture values are invented. The reviewed values become pending drafts; mixed receipts split into stock and other-cost drafts that must reconcile to the receipt total. Photos are stored in per-user IndexedDB on that browser and attached to drafts, not synced to cloud storage. OCR images are sent to the configured extraction endpoint.
+- **Business onboarding:** after secure email signup and any required email confirmation, the owner completes an 11-step guided business profile before entering the workspace. The onboarding screen has no dashboard/sidebar, covers business type, operations, location, goals, legal form, activity, and self-reported registration readiness, then shows workspace setup and a personalized welcome before opening the dashboard. ZedBiz applies answers as AI guidance context; it does not train a model or verify status with government systems.
+- **Account & business:** inside the workspace, the page is a business overview, not onboarding. It shows the business identity, activity, location, legal form, operating context, priorities, and self-reported PACRA/ZRA/VAT readiness. Updates use one page and do not restart setup or alter the ledger. Account email and password controls are available there.
+- **Workspace appearance:** the Settings page offers Mist (whitesmoke, default) and Night themes, comfortable or compact spacing, and reduced motion. Preferences are saved locally in the browser and do not change financial data.
 - **AI Agent Lab:** a small synthetic intent classifier recognizes sale, expense, summary or unsupported requests. It can prepare a sale/expense draft or call the confirmed-record summary tool. A possible duplicate is held for review.
 - **Voice:** browser speech recognition and speech synthesis are optional. Voice recognition is English-only in this demo and may use the browser's speech service. Typing works without it.
 - **Dashboard:** totals, trend charts, expense breakdown, performance comparison and recent records update from confirmed entries. A 30-day revenue outlook uses a clearly labelled deterministic baseline offline; it is not presented as XGBoost.
 - **Tax readiness:** the app shows two turnover-tax scenarios and VAT threshold progress. It does not select a tax base, calculate income-tax liability or calculate VAT payable.
 - **Reports:** download synthetic financial and illustrative tax-position PDFs from confirmed records.
-- **Dark theme:** a low-glare charcoal workspace keeps the teal and amber brand accents and respects reduced-motion preferences.
+- **Light workspace:** a whitesmoke canvas with ZedBiz teal and amber accents, compact navigation, and reduced-motion support.
+- **Layered system:** business access and capture feed structured records, AI interpretation, deterministic finance/tax readiness, and a future connectivity ecosystem. Zamtel SMS/USSD and ZRA services are not connected in the prototype.
 
 ## Account setup still required
 
@@ -69,7 +72,7 @@ The web tax view projects the last 90 days to an annual amount. The API accepts 
 
 ### Dev 2 integration seam
 
-`src/services/engineAdapter.ts` isolates the optional receipt and forecast services from the interface. Set `VITE_ENGINE_API_URL` to a service that implements `POST /receipts/extract` and `POST /forecast/revenue`. Receipt extraction should return supplier, date, line items, COGS, expenses, total and confidence. Forecast requests contain confirmed revenue history and a 30-day horizon. If the URL is unset, the demo uses a receipt fixture and a transparent moving-average/drift baseline. The adapter is the intended handoff point for a validated Donut-compatible extractor and forecast model; it does not claim either model is already running.
+`src/services/engineAdapter.ts` isolates the optional receipt and forecast services from the interface. Set `VITE_ENGINE_API_URL` to a service that implements `POST /receipts/extract` and `POST /forecast/revenue`. Receipt extraction should return supplier, date, line items, COGS, expenses, total and confidence. Forecast requests contain confirmed revenue history and a 30-day horizon. If the URL is unset, the owner can still enter receipt details manually and the app uses a transparent moving-average/drift baseline for revenue. The adapter is the intended handoff point for a validated Donut-compatible extractor and forecast model; it does not claim either model is already running.
 
 Public pages: `/how-it-works` explains the capture and review flow; `/scope` explains AI, financial and tax boundaries. The homepage scenario chips open isolated, read-only synthetic workspaces.
 
@@ -119,7 +122,7 @@ Import this repository as a Vite project with the default build command `npm run
 ## Recommended next enhancements
 
 1. **Local-language experience:** co-design consented Bemba, Nyanja, and other phrase sets with traders; show the recognized transcript and let the user correct it before any draft is created.
-2. **Receipt capture:** add OCR that highlights extracted fields and asks the owner to confirm uncertain values; never infer tax treatment from an image alone.
+2. **Receipt vision:** configure and validate an OCR endpoint that highlights uncertain extracted fields; keep owner review and never infer tax treatment from an image alone.
 3. **Connectivity resilience:** queue signed, duplicate-safe SMS/USSD events and sync them when data service returns, using a Zamtel sandbox before any live integration.
 4. **Tax rules governance:** have Finance approve versioned rules and worked examples, then lock them with regression tests before showing payable amounts.
 5. **Production security:** move transaction records from browser storage into owner-scoped Supabase tables, then add audit history and retention controls before accepting real business records.

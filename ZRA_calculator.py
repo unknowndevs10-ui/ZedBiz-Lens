@@ -152,7 +152,7 @@ def calculate_tax_readiness(transactions: list[dict[str, Any]], profile: dict[st
         rate_label = f"{corporate_rate * 100}% corporate" + (" agriculture" if "agric" in activity else "") + (" scenario; turnover-tax status needs confirmation" if mat is None else "; includes MAT floor check")
     elif legal_form in {"sole_trader", "registered_business_name"}:
         income_tax = _progressive_tax(taxable_profit)
-        rate_label = "Progressive individual schedule (0%-37%)"
+        rate_label = "Progressive individual schedule (0%–37%)"
     elif legal_form == "partnership":
         rate_label = "Partner allocation needs Finance review"
 
@@ -190,4 +190,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

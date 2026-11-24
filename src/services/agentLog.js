@@ -51,4 +51,3 @@ export function getSampleAgentEvents(businessName = 'Demo business') {
 export function clearAgentEvents() {
   try { localStorage.removeItem(scopedKey()); } catch { /* local history is optional */ }
 }
-

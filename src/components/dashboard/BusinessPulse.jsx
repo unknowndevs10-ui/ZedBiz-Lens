@@ -13,7 +13,7 @@ export default function BusinessPulse({ signals, onSpeak, speaking }) {
     <section aria-labelledby="business-pulse-title" className="mt-6 overflow-hidden rounded-2xl border border-line bg-[#121a1b]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4 sm:px-5">
         <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl border border-brand-200 bg-brand-50 text-brand-700"><Sparkles className="h-5 w-5" /></span><div><p className="eyebrow">Business pulse</p><h2 id="business-pulse-title" className="mt-0.5 text-base font-extrabold">One thing to notice</h2></div></div>
-        <button type="button" onClick={onSpeak} disabled={speaking || !signals.length} className="focus-ring inline-flex h-9 items-center gap-2 rounded-lg border border-line px-3 text-xs font-bold text-ink-muted transition hover:border-brand-500 hover:text-ink disabled:opacity-50"><AudioLines className="h-4 w-4 text-brand-700" />{speaking ? 'Speaking.' : 'Listen to the short version'}</button>
+        <button type="button" onClick={onSpeak} disabled={speaking || !signals.length} className="focus-ring inline-flex h-9 items-center gap-2 rounded-lg border border-line px-3 text-xs font-bold text-ink-muted transition hover:border-brand-500 hover:text-ink disabled:opacity-50"><AudioLines className="h-4 w-4 text-brand-700" />{speaking ? 'Speaking…' : 'Listen to the short version'}</button>
       </div>
       <div className="space-y-3 p-4 sm:p-5">
         {priority && <article className={`rounded-xl border p-4 sm:p-5 ${TONES[priority.tone] || TONES.teal}`}>
@@ -39,4 +39,3 @@ export default function BusinessPulse({ signals, onSpeak, speaking }) {
     </section>
   );
 }
-

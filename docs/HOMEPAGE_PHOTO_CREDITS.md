@@ -9,4 +9,3 @@ These are representative African stock photographs. They do not depict confirmed
 | Market trader | Kayode Adedeji | [Woman selling tomatoes at a market](https://www.pexels.com/photo/a-woman-in-an-african-style-dress-at-a-market-28112436/) |
 | Market business | Victor Oluwayoju | [Vendor at the market stall](https://www.pexels.com/photo/vendor-at-the-market-stall-20068076/) |
 | Neighborhood shop | Taiye Salawu | [Shopkeeper in a local convenience store](https://www.pexels.com/photo/shopkeeper-in-a-local-nigerian-convenience-store-40977565/) |
-

@@ -6,6 +6,11 @@ import { Textarea } from '../common/FormControls';
 import { Link } from 'react-router-dom';
 import { formatKwacha } from '../../utils/format';
 
+const LANGUAGE_EXAMPLES = [
+  { label: 'Nyanja', text: 'Ndagulitsa tomato pa K600, ndagula katundu pa K400, ndalipira transport K50.' },
+  { label: 'Bemba', text: 'Nashitisha tomato pa K600, nashita katundu K400, nafuta transport K50.' },
+];
+
 /** Free-text entry composer. `onSubmit(text)` must return a promise; rejections show inline. */
 export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = false, language = 'English' }) {
   const [text, setText] = useState('');
@@ -33,7 +38,7 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
     }
     const recognizer = new Recognition();
     recognitionRef.current = recognizer;
-    recognizer.lang = language === 'Nyanja' || language === 'Bemba' ? 'en-ZM' : 'en-ZA';
+    recognizer.lang = language === 'Nyanja' ? 'ny-ZM' : language === 'Bemba' ? 'bem-ZM' : 'en-ZA';
     recognizer.continuous = false;
     recognizer.interimResults = false;
     recognizer.onresult = (event) => {
@@ -42,7 +47,8 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
       setError('');
     };
     recognizer.onerror = (event) => {
-      if (event.error !== 'aborted' && event.error !== 'no-speech') setError('Voice input could not start. Check microphone permission or type your note.');
+      if (event.error === 'language-not-supported') setError('This browser does not support speech recognition for this language yet. Type your note; local Bemba/Nyanja phrase parsing is available.');
+      else if (event.error !== 'aborted' && event.error !== 'no-speech') setError('Voice input could not start. Check microphone permission or type your note.');
       setListening(false);
     };
     recognizer.onend = () => setListening(false);
@@ -91,6 +97,10 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
         aria-invalid={error ? true : undefined}
         disabled={busy}
       />
+      <div className="mt-2 flex flex-wrap items-center gap-2" aria-label="Try an example in a Zambian language">
+        <span className="text-[11px] text-ink-muted">Try an example:</span>
+        {LANGUAGE_EXAMPLES.map((example) => <button key={example.label} type="button" disabled={busy} onClick={() => { setText(example.text); setError(''); setPrepared(null); }} className="rounded border border-line px-2 py-1 text-[11px] font-semibold text-brand-700 hover:border-brand focus-ring disabled:opacity-50">{example.label}</button>)}
+      </div>
       {error ? (
         <div id={`${id}-error`} className="mt-3">
           <Notification tone="danger">{error}</Notification>
@@ -112,8 +122,8 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
         {busy ? 'Processing' : 'Process entry'}
       </Button>
       {prepared && <section aria-live="polite" className="mt-4 rounded-lg border border-brand-200 bg-[#0e1516] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="eyebrow">AI DRAFT � DETERMINISTIC ZRA MATH</p><h3 className="mt-1 text-sm font-extrabold">{prepared.transactions?.length ? `${prepared.transactions.length} draft${prepared.transactions.length === 1 ? '' : 's'} prepared for review` : 'Business check recorded'}</h3></div><Link to="/app/transactions" className="text-xs font-bold text-brand-700 underline">Open review queue</Link></div>
-        {prepared.transactions?.length > 0 && <ul className="mt-3 space-y-2">{prepared.transactions.map((transaction) => <li key={transaction.id} className="rounded-md border border-line bg-[#121a1b] px-3 py-2.5"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-xs font-bold">{transaction.type === 'owner_withdrawal' ? 'Owner withdrawal' : transaction.type === 'income' ? 'Sale' : 'Expense'} � {transaction.category}</p><p className="mt-0.5 text-xs text-ink-muted">{transaction.description}</p></div><p className="text-sm font-extrabold tabular-nums">{formatKwacha(transaction.amount)}</p></div>{transaction.aiExplanation && <details className="mt-2 border-t border-line pt-2"><summary className="cursor-pointer text-[10px] font-bold text-brand-700">Why AI flagged this</summary><p className="mt-1 text-[11px] leading-5 text-ink-muted">{transaction.aiExplanation}</p></details>}</li>)}</ul>}
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="eyebrow">AI DRAFT · DETERMINISTIC ZRA MATH</p><h3 className="mt-1 text-sm font-extrabold">{prepared.transactions?.length ? `${prepared.transactions.length} draft${prepared.transactions.length === 1 ? '' : 's'} prepared for review` : 'Business check recorded'}</h3></div><Link to="/app/transactions" className="text-xs font-bold text-brand-700 underline">Open review queue</Link></div>
+        {prepared.transactions?.length > 0 && <ul className="mt-3 space-y-2">{prepared.transactions.map((transaction) => <li key={transaction.id} className="rounded-md border border-line bg-[#121a1b] px-3 py-2.5"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-xs font-bold">{transaction.type === 'owner_withdrawal' ? 'Owner withdrawal' : transaction.type === 'income' ? 'Sale' : 'Expense'} · {transaction.category}</p><p className="mt-0.5 text-xs text-ink-muted">{transaction.description}</p></div><p className="text-sm font-extrabold tabular-nums">{formatKwacha(transaction.amount)}</p></div>{transaction.aiExplanation && <details className="mt-2 border-t border-line pt-2"><summary className="cursor-pointer text-[10px] font-bold text-brand-700">Why AI flagged this</summary><p className="mt-1 text-[11px] leading-5 text-ink-muted">{transaction.aiExplanation}</p></details>}</li>)}</ul>}
         {prepared.operations?.map((operation, index) => <p key={`${operation.type}-${index}`} className="mt-2 text-xs text-ink-muted">Cash count K{Number(operation.actual).toLocaleString('en-ZM')} recorded for till review. It is not sales or income.</p>)}
         {prepared.parsing?.unparsed?.length > 0 && <p className="mt-2 text-[11px] leading-5 text-accent">I left {prepared.parsing.unparsed.length} part(s) out of the ledger because they need a clearer amount or description.</p>}
         <p className="mt-3 border-t border-line pt-2 text-[10px] leading-5 text-ink-muted">These entries stay pending until you review and confirm them. AI can prepare drafts; it cannot change confirmed profit or tax totals.</p>
@@ -122,4 +132,3 @@ export default function EntryBox({ onSubmit, id = 'entry-text', autoFocus = fals
     </form>
   );
 }
-

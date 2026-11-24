@@ -8,6 +8,7 @@ import { useAuth } from './context/AuthContext';
 import LoadingScene from './components/common/LoadingScene';
 import { useData } from './context/DataContext';
 import DemoLaunch from './pages/DemoLaunch';
+import Logo from './components/common/Logo';
 
 // Heavy pages (charts) load on demand to keep the first paint light.
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -19,6 +20,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
 const BoundariesPage = lazy(() => import('./pages/BoundariesPage'));
 const CapturePage = lazy(() => import('./pages/CapturePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -48,8 +50,21 @@ function RequireAccountAccess({ children }) {
   if (isSyntheticDemo) return children;
   if (!user || status === 'signed_out' || status === 'unconfigured') return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   if (status === 'error') return <Navigate to="/login?error=profile" replace />;
-  if (!profileComplete && location.pathname !== '/app/profile') return <Navigate to="/app/profile" replace />;
+  if (!profileComplete) return <Navigate to="/onboarding" replace />;
   return children;
+}
+
+function RequireOnboardingAccess({ children }) {
+  const { user, status, profileComplete } = useAuth();
+  if (status === 'loading' || status === 'checking') return <LoadingScene label="Preparing your private setup" />;
+  if (!user || status === 'signed_out' || status === 'unconfigured') return <Navigate to="/login?mode=signup" replace />;
+  if (status === 'error') return <Navigate to="/login?error=profile" replace />;
+  if (profileComplete) return <Navigate to="/app/dashboard" replace />;
+  return children;
+}
+
+function OnboardingShell() {
+  return <div className="min-h-screen bg-surface"><header className="flex h-16 items-center justify-between border-b border-line bg-white px-4 sm:px-8"><Logo to="/" /><span className="hidden rounded-full border border-brand-100 bg-brand-50 px-3 py-1.5 text-[11px] font-bold text-brand-800 sm:inline-flex">Private business setup · progress saves as you continue</span><span className="text-[10px] font-semibold text-ink-muted sm:hidden">Private setup</span></header><BusinessProfilePage /></div>;
 }
 
 export default function App() {
@@ -64,6 +79,7 @@ export default function App() {
         <Route path="/scope" element={<BoundariesPage />} />
         <Route path="/demo/:scenario" element={<DemoLaunch />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/onboarding" element={<RequireOnboardingAccess><OnboardingShell /></RequireOnboardingAccess>} />
         <Route path="/workspace" element={<Navigate to="/app/dashboard" replace />} />
         <Route path="/app" element={<RequireAccountAccess><AppShell /></RequireAccountAccess>}>
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -74,6 +90,7 @@ export default function App() {
           <Route path="profile" element={<BusinessProfilePage />} />
           <Route path="tax" element={<TaxPage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />

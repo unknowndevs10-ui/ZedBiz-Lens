@@ -49,4 +49,3 @@ export default function WaveField({ speaking = false, animationEnabled = true, c
   }, [speaking, animationEnabled]);
   return <canvas ref={canvasRef} aria-hidden="true" className={`block h-36 w-full ${className}`} />;
 }
-

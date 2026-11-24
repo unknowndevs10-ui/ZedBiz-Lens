@@ -110,7 +110,7 @@ export function DataProvider({ children }) {
       pacraStatus: profile.pacraStatus || 'unsure',
       zraStatus: profile.zraStatus || 'unsure',
       vatStatus: profile.vatStatus || 'unsure',
-      legalForm: ['sole_trader', 'registered_business_name', 'limited_company', 'partnership'].includes(profile.legalForm) ? profile.legalForm : '',
+      legalForm: ['sole_trader', 'registered_business_name', 'limited_company', 'partnership', 'other'].includes(profile.legalForm) ? profile.legalForm : '',
       taxActivity: ['retail_trading', 'agriculture', 'services', 'consultancy', 'other'].includes(profile.taxActivity) ? profile.taxActivity : '',
       vatRegistrationType: ['voluntary', 'statutory', 'unsure'].includes(profile.vatRegistrationType) ? profile.vatRegistrationType : 'unsure',
       formalizationInterest: profile.formalizationInterest || 'unsure',
@@ -273,4 +273,3 @@ export function useData() {
   if (!ctx) throw new Error('useData must be used inside <DataProvider>');
   return ctx;
 }
-

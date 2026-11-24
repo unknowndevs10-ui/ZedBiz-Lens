@@ -166,4 +166,3 @@ export function generateSeedTransactions(business, days = 120) {
   }
   return transactions;
 }
-

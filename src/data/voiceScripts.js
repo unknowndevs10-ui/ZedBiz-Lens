@@ -28,4 +28,3 @@ export function buildWelcomeSummary(profile = {}) {
     'Your business. Your numbers. Your next step. Every kwacha has a story. See the whole picture.',
   ].join(' ');
 }
-

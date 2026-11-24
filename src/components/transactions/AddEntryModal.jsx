@@ -23,4 +23,3 @@ export default function AddEntryModal({ open, onClose }) {
     </Modal>
   );
 }
-

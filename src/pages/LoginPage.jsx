@@ -21,14 +21,14 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [mode, setMode] = useState('signin');
+  const [mode, setMode] = useState(() => new URLSearchParams(window.location.search).get('mode') === 'signup' ? 'signup' : 'signin');
   const location = useLocation();
   const navigate = useNavigate();
   const authParams = new URLSearchParams(location.hash.replace(/^#/, ''));
   const accountAction = authParams.get('type') === 'invite' ? 'invite' : authParams.get('type') === 'recovery' || new URLSearchParams(location.search).has('reset') ? 'recovery' : '';
 
   if (user && status === 'ready' && !accountAction) {
-    return <Navigate to={profileComplete ? location.state?.from || '/app/dashboard' : '/app/profile'} replace />;
+    return <Navigate to={profileComplete ? location.state?.from || '/app/dashboard' : '/onboarding'} replace />;
   }
   if (status === 'loading' || status === 'checking') return <main className="min-h-screen bg-[#0b1112] px-4 pt-16"><LoadingState label="Opening your secure workspace" /></main>;
 
@@ -43,7 +43,7 @@ export default function LoginPage() {
         if (result.emailConfirmationRequired) {
           setMessage('Check your email for a confirmation link. After confirming, return here to sign in and set up your business.');
         } else {
-          navigate('/app/profile', { replace: true });
+          navigate('/onboarding', { replace: true });
         }
       } else {
         await signIn(email, password);
@@ -81,7 +81,7 @@ export default function LoginPage() {
     if (password !== confirmPassword) { setBusy(false); setError('Those passwords do not match yet.'); return; }
     try {
       await setAccountPassword(password);
-      navigate('/app/profile', { replace: true });
+      navigate('/onboarding', { replace: true });
     } catch (err) { setError(err.message || 'We could not update your password.'); }
     finally { setBusy(false); }
   }
@@ -129,4 +129,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

@@ -8,4 +8,8 @@ dist
 *.log
 **/__pycache__
 *.py[cod]
-
+qa-sandbox/
+agent-lab/
+tests/
+tmp/
+output/pdf/

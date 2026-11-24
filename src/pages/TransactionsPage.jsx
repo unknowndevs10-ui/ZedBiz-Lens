@@ -70,7 +70,7 @@ export default function TransactionsPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Transactions</h1>
-          <p className="mt-1 text-sm text-ink-muted">{business ? `${business.name} � ` : ''}Review new entries, then manage your ledger.</p>
+          <p className="mt-1 text-sm text-ink-muted">{business ? `${business.name} · ` : ''}Review new entries, then manage your ledger.</p>
         </div>
         {!isSyntheticDemo && <Button icon={Plus} onClick={openAddEntry} className="hidden sm:inline-flex">Add entry</Button>}
       </header>
@@ -143,4 +143,3 @@ export default function TransactionsPage() {
     </div>
   );
 }
-

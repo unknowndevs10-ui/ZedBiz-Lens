@@ -56,4 +56,3 @@ create policy "team members update own business profile"
   on public.business_profiles for update to authenticated
   using (user_id = (select auth.uid()) and public.is_team_member())
   with check (user_id = (select auth.uid()) and public.is_team_member());
-

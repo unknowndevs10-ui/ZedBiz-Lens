@@ -10,4 +10,3 @@ export const LOCAL_GREETINGS = {
 };
 
 export const LANGUAGE_SUPPORT_NOTE = 'Bemba and Nyanja greeting support is an early, reviewed phrase set. Business, tax and financial explanations remain in English until local-language wording and speech are validated with native speakers.';
-

@@ -105,4 +105,3 @@ export function buildSimplePdf({ headerLabel = 'WORKSPACE RECORDS', blocks }) {
   pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   return new Blob([pdf], { type: 'application/pdf' });
 }
-

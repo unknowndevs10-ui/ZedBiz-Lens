@@ -30,7 +30,7 @@ export default function ReportsPage() {
     <div>
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight">Reports</h1>
-        <p className="mt-1 text-sm text-ink-muted">{business?.name} � Download PDF reports built from your confirmed entries.</p>
+        <p className="mt-1 text-sm text-ink-muted">{business?.name} · Download PDF reports built from your confirmed entries.</p>
       </header>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
@@ -69,8 +69,8 @@ export default function ReportsPage() {
               <PreviewRow label="Total sales (period)" value={formatKwacha(taxData.accounting.totalSales)} />
               <PreviewRow label="Projected annual turnover" value={formatKwacha(taxData.turnover.annualized)} />
               <PreviewRow label="VAT threshold progress indicator" value={formatPercent(taxData.vat.actualProgressPercent, 1)} strong />
-              <PreviewRow label="Turnover-tax scenario � excess over floor" value={formatKwacha(taxData.turnover.excessOnly)} />
-              <PreviewRow label="Turnover-tax scenario � full turnover" value={formatKwacha(taxData.turnover.fullTurnover)} />
+              <PreviewRow label="Turnover-tax scenario · excess over floor" value={formatKwacha(taxData.turnover.excessOnly)} />
+              <PreviewRow label="Turnover-tax scenario · full turnover" value={formatKwacha(taxData.turnover.fullTurnover)} />
               <PreviewRow label="Illustrative income-tax estimate" value={taxData.incomeTax.estimatedTax == null ? 'Complete tax profile to unlock' : formatKwacha(taxData.incomeTax.estimatedTax)} />
               <PreviewRow label="Illustrative VAT payable / exposure" value={taxData.vat.shouldEstimate ? formatKwacha(taxData.vat.vatPayableIllustration) : 'Threshold tracking only'} />
             </dl>
@@ -80,4 +80,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-

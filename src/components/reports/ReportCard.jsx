@@ -62,10 +62,9 @@ export default function ReportCard({ icon: Icon, title, description, periodContr
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3 sm:px-5">
-        <p className="text-xs text-ink-muted">PDF � built from your confirmed records</p>
+        <p className="text-xs text-ink-muted">PDF · built from your confirmed records</p>
         <Button icon={Download} loading={busy} disabled={previewLoading || Boolean(previewError)} onClick={handleDownload}>Download PDF</Button>
       </div>
     </Card>
   );
 }
-

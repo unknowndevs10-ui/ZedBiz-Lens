@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Camera, Check, ClipboardPaste, Mic, ReceiptText, Smartphone, Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Camera, Check, ClipboardPaste, Mic, Plus, ReceiptText, Smartphone, Upload, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
@@ -7,22 +7,27 @@ import EntryBox from '../components/transactions/EntryBox';
 import MomoBatchPanel from '../components/transactions/MomoBatchPanel';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
-import { receiptDraft } from '../services/engineAdapter';
 import { inspectReceipt } from '../services/aiEngine';
 import { formatKwacha } from '../utils/format';
 import { parseMobileMoneySms } from '../services/momoParser';
+import { saveReceiptPhoto } from '../services/receiptArchive';
+import { useAuth } from '../context/AuthContext';
 
 export default function CapturePage() {
   const { businessId, businessProfile, transactions, submitEntry, submitAgentDraft, isSyntheticDemo } = useData();
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState(null);
+  const fileInputRef = useRef(null);
   const [imageUrl, setImageUrl] = useState('');
   const [extraction, setExtraction] = useState(null);
   const [receiptAlerts, setReceiptAlerts] = useState([]);
   const [supplier, setSupplier] = useState('');
   const [amount, setAmount] = useState('');
+  const [purchaseType, setPurchaseType] = useState('stock');
+  const [allowReceiptService, setAllowReceiptService] = useState(false);
   const [tab, setTab] = useState('note');
   const [sms, setSms] = useState('');
   const [smsDraft, setSmsDraft] = useState(null);
@@ -34,31 +39,70 @@ export default function CapturePage() {
 
   async function scanReceipt(nextFile) {
     if (!nextFile) return;
-    if (!nextFile.type.startsWith('image/')) return toast('Choose a receipt image file.', { tone: 'warning' });
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(nextFile.type)) return toast('Choose a JPG, PNG or WebP receipt image.', { tone: 'warning' });
     if (nextFile.size > 8 * 1024 * 1024) return toast('Choose an image smaller than 8 MB.', { tone: 'warning' });
     setFile(nextFile); setExtraction(null); setReceiptAlerts([]); setBusy(true);
     setImageUrl((current) => { if (current) URL.revokeObjectURL(current); return URL.createObjectURL(nextFile); });
     try {
-      const { extraction: result, alerts } = await inspectReceipt(nextFile, transactions);
+      const serviceConfigured = Boolean(String(import.meta.env.VITE_ENGINE_API_URL || '').trim());
+      const resultBundle = serviceConfigured && !allowReceiptService
+        ? { extraction: { supplier: '', date: new Date().toISOString().slice(0, 10), line_items: [], cogs_amount: 0, expense_amount: 0, total_zmw: 0, confidence: 0, smart_invoice_valid: null, supplier_tpin_verified: null, input_vat_amount: null, source: 'manual-entry' }, alerts: [] }
+        : await inspectReceipt(nextFile, transactions);
+      const { extraction: result, alerts } = resultBundle;
       setExtraction(result);
       setReceiptAlerts(alerts);
-      // The offline adapter returns a fixture, not OCR from this image.
-      // Never prefill a real ledger draft with invented receipt values.
       setSupplier(result.source === 'donut-live' ? result.supplier : '');
       setAmount(result.source === 'donut-live' ? String(result.total_zmw) : '');
-    } catch (error) { toast(error.message || 'Receipt extraction failed.', { tone: 'danger' }); }
+      setPurchaseType(result.source === 'donut-live' && result.cogs_amount > 0 && result.expense_amount > 0 ? 'mixed' : result.source === 'donut-live' && result.cogs_amount <= 0 ? 'expense' : 'stock');
+    } catch (error) {
+      setExtraction({ supplier: '', date: new Date().toISOString().slice(0, 10), line_items: [], cogs_amount: 0, expense_amount: 0, total_zmw: 0, confidence: 0, smart_invoice_valid: null, supplier_tpin_verified: null, input_vat_amount: null, source: 'manual-entry' });
+      setSupplier(''); setAmount(''); setPurchaseType('stock');
+      toast(`${error.message || 'Receipt service is unavailable.'} Enter the values from your photo manually; nothing was guessed.`, { tone: 'info', title: 'Manual receipt entry ready' });
+    }
     finally { setBusy(false); }
   }
 
   async function queueReceipt() {
-    if (!extraction || extraction.source !== 'donut-live' || !supplier.trim() || !amount || Number(amount) <= 0) return;
+    if (!extraction || !supplier.trim() || !amount || Number(amount) <= 0) return;
     setBusy(true);
     try {
+      const total = Number(amount);
+      const stockCost = purchaseType === 'stock' ? total : purchaseType === 'mixed' ? Number(extraction.cogs_amount) : 0;
+      const operatingCost = purchaseType === 'expense' ? total : purchaseType === 'mixed' ? Number(extraction.expense_amount) : 0;
+      if (purchaseType === 'mixed' && Math.abs(stockCost + operatingCost - total) > 0.01) {
+        toast('For a mixed receipt, stock cost plus other business costs must match the receipt total.', { tone: 'warning' });
+        setBusy(false);
+        return;
+      }
+      if (stockCost <= 0 && operatingCost <= 0) {
+        toast('Enter a positive amount for the receipt before adding a review draft.', { tone: 'warning' });
+        setBusy(false);
+        return;
+      }
+      let receiptAttachmentId = null;
+      if (file) {
+        try { receiptAttachmentId = await saveReceiptPhoto(file, user?.id || 'guest'); }
+        catch { toast('Receipt details can still be saved, but this browser could not retain the photo.', { tone: 'warning' }); }
+      }
       const lineSummary = extraction.line_items.map((item) => `${item.description} x${item.quantity} ${formatKwacha(item.amount)}`).join('; ');
-      const source = `Receipt from ${supplier.trim()}, ${extraction.date}. Items: ${lineSummary || 'not provided'}. COGS ${formatKwacha(Number(extraction.cogs_amount) || 0)}; other cost ${formatKwacha(Number(extraction.expense_amount) || 0)}; total ${formatKwacha(Number(amount))}.`;
-      const item = extraction.line_items[0];
-      await submitAgentDraft({ businessId, text: source, draft: { ...receiptDraft(extraction), description: supplier.trim(), amount: Number(amount), source: 'Donut OCR', counterparty: supplier.trim(), itemName: item?.description, unitCost: item?.unit_price, quantity: item?.quantity, smartInvoiceValid: extraction.smart_invoice_valid === true, supplierTpinVerified: extraction.supplier_tpin_verified === true, inputVatAmount: extraction.input_vat_amount ?? null, inputInvoiceDate: extraction.date } });
-      toast('Receipt draft is waiting for owner review.');
+      const receiptReference = file?.name ? `Photo: ${file.name}.` : 'Photo captured in this session.';
+      const common = { date: extraction.date || new Date().toISOString().slice(0, 10), confidence: extraction.source === 'donut-live' ? extraction.confidence : null, counterparty: supplier.trim(), source: extraction.source === 'donut-live' ? 'Receipt vision service · owner reviewed' : `Receipt photo · owner entered details · ${receiptReference}`, receiptAttachmentId, receiptImageName: receiptAttachmentId ? file?.name : null, smartInvoiceValid: extraction.source === 'donut-live' ? extraction.smart_invoice_valid === true : null, supplierTpinVerified: extraction.source === 'donut-live' ? extraction.supplier_tpin_verified === true : null, inputVatAmount: extraction.source === 'donut-live' ? extraction.input_vat_amount : null, inputInvoiceDate: extraction.date || null };
+      const lineDescription = lineSummary ? ` Items: ${lineSummary}.` : '';
+      const lineItem = extraction.line_items.find((item) => Number(item.amount) > 0);
+      if (stockCost > 0) {
+        const stockDescription = `Stock purchase from ${supplier.trim()}`;
+        await submitAgentDraft({ businessId, text: `${receiptReference} ${stockDescription}, ${common.date}, ${formatKwacha(stockCost)}.${lineDescription}`, draft: { type: 'expense', category: 'Stock purchases', description: stockDescription, amount: stockCost, ...common, itemName: lineItem?.description, unitCost: lineItem?.unit_price, quantity: lineItem?.quantity } });
+      }
+      if (operatingCost > 0) {
+        const expenseDescription = `Business costs from ${supplier.trim()}`;
+        // A mixed invoice is represented by two ledger drafts. Keep invoice-level
+        // VAT evidence on only one draft so the same supplier VAT is not counted twice.
+        const invoiceTaxEvidence = stockCost > 0
+          ? { smartInvoiceValid: false, supplierTpinVerified: false, inputVatAmount: null }
+          : {};
+        await submitAgentDraft({ businessId, text: `${receiptReference} ${expenseDescription}, ${common.date}, ${formatKwacha(operatingCost)}.`, draft: { type: 'expense', category: 'Other expenses', description: expenseDescription, amount: operatingCost, ...common, ...invoiceTaxEvidence } });
+      }
+      toast(purchaseType === 'mixed' ? 'Two receipt drafts are waiting for owner review.' : 'Receipt draft is waiting for owner review.');
       navigate('/app/transactions');
     } catch (error) { toast(error.message || 'Could not add the draft.', { tone: 'danger' }); }
     finally { setBusy(false); }
@@ -80,7 +124,7 @@ export default function CapturePage() {
         draft: {
           type: smsDraft.direction,
           category: smsDraft.direction === 'income' ? 'Sales' : 'Other expenses',
-          description: `${smsDraft.direction === 'income' ? 'Mobile-money receipt' : 'Mobile-money payment'}${smsDraft.counterparty ? ` � ${smsDraft.counterparty}` : ''}`,
+          description: `${smsDraft.direction === 'income' ? 'Mobile-money receipt' : 'Mobile-money payment'}${smsDraft.counterparty ? ` · ${smsDraft.counterparty}` : ''}`,
           amount: Number(smsDraft.amount), date: new Date().toISOString().slice(0, 10),
           confidence: smsDraft.confidence, paymentMethod: 'mobile_money',
           reference: smsDraft.reference, counterparty: smsDraft.counterparty, feeAmount: smsDraft.feeAmount,
@@ -109,6 +153,15 @@ export default function CapturePage() {
     });
   }
 
+  function addReceiptLine() {
+    setExtraction((current) => current ? { ...current, line_items: [...current.line_items, { description: '', quantity: 1, unit_price: 0, amount: 0 }] } : current);
+  }
+
+  function clearReceipt() {
+    setFile(null); setImageUrl(''); setExtraction(null); setReceiptAlerts([]); setSupplier(''); setAmount(''); setPurchaseType('stock');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
   return <main className="mx-auto max-w-4xl">
     <header className="mb-7"><p className="eyebrow">CAPTURE</p><h1 className="mt-2 text-3xl font-extrabold tracking-[-.04em]">Record what happened.</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">Snap a receipt, speak a note or type it. Every result stays a draft until you review and confirm it.</p></header>
     <div>
@@ -122,21 +175,24 @@ export default function CapturePage() {
       </div>
       <div className="mt-4">
       {tab === 'receipt' && <Card className="max-w-2xl p-5 sm:p-6">
-        <div className="flex items-start justify-between"><div><p className="eyebrow">01 / RECEIPT</p><h2 className="mt-2 text-lg font-extrabold">Snap or upload</h2><p className="mt-1 text-xs leading-5 text-ink-muted">Offline preview stays in this browser. A configured extraction service receives the image.</p></div><Camera className="h-5 w-5 text-brand-700" /></div>
-        <label className="mt-5 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-[#0e1516] p-5 text-center transition-colors hover:border-brand-500"><Upload className="h-5 w-5 text-brand-700" /><span className="mt-2 text-sm font-bold">Choose a receipt photo</span><span className="mt-1 text-xs text-ink-muted">JPG, PNG or WebP � up to 8 MB</span><input className="sr-only" type="file" accept="image/*" capture="environment" disabled={busy || isSyntheticDemo} onChange={(event) => scanReceipt(event.target.files?.[0])} /></label>
-        {busy && <div className="mt-4 rounded-lg border border-line bg-[#0e1516] p-3" role="status"><p className="text-xs font-bold text-ink">Receipt service requested</p><ol className="mt-2 grid gap-2 text-[11px] text-ink-muted sm:grid-cols-3"><li>01 � Supplier and TPIN fields</li><li>02 � Line-item extraction</li><li>03 � Smart Invoice metadata</li></ol><p className="mt-2 text-[10px] text-ink-muted">These are requested processing stages. The connected service must return the fields; the interface does not claim a Donut model is installed.</p></div>}
-        {file && <p className="mt-3 truncate text-xs text-ink-muted">{file.name}</p>}
+        <div className="flex items-start justify-between"><div><p className="eyebrow">01 / RECEIPT</p><h2 className="mt-2 text-lg font-extrabold">Capture a supplier receipt</h2><p className="mt-1 text-xs leading-5 text-ink-muted">Take a photo or choose an image. If receipt vision is unavailable, enter the details from your photo. Nothing is guessed.</p></div><Camera className="h-5 w-5 text-brand-700" /></div>
+        {Boolean(String(import.meta.env.VITE_ENGINE_API_URL || '').trim()) && <label className="mt-4 flex items-start gap-2 rounded-lg border border-line bg-white p-3 text-xs leading-5 text-ink-muted"><input type="checkbox" checked={allowReceiptService} onChange={(event) => setAllowReceiptService(event.target.checked)} className="mt-1 accent-[#185C58]" /><span>Allow this receipt image to be sent to the configured extraction service for suggestions. You will review all fields. Leave unchecked to keep the image in this browser and enter details manually.</span></label>}
+        <label className="mt-5 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface p-5 text-center transition-colors hover:border-brand-500"><Upload className="h-5 w-5 text-brand-700" /><span className="mt-2 text-sm font-bold">Use camera or choose a receipt</span><span className="mt-1 text-xs text-ink-muted">JPG, PNG or WebP · up to 8 MB</span><input ref={fileInputRef} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={busy || isSyntheticDemo} onChange={(event) => scanReceipt(event.target.files?.[0])} /></label>
+        {busy && <div className="mt-4 rounded-lg border border-line bg-surface p-3" role="status"><p className="text-xs font-bold text-ink">Preparing your receipt for review</p><ol className="mt-2 grid gap-2 text-[11px] text-ink-muted sm:grid-cols-3"><li>01 · Open the receipt image</li><li>02 · Check captured details</li><li>03 · Keep every value editable</li></ol><p className="mt-2 text-[10px] text-ink-muted">A connected extraction service may suggest fields. You review them before saving a draft.</p></div>}
+        {file && <div className="mt-3 flex items-center justify-between gap-3"><p className="truncate text-xs text-ink-muted">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</p><button type="button" onClick={clearReceipt} className="inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs font-bold text-ink-muted hover:bg-surface focus-ring"><X className="h-3.5 w-3.5" />Remove</button></div>}
         {imageUrl && <img src={imageUrl} alt="Selected receipt preview" className="mt-3 max-h-48 w-full rounded-lg border border-line object-contain" />}
         {extraction && <div className="mt-4 border-t border-line pt-4">
-          <p className="text-[10px] font-extrabold uppercase tracking-widest text-accent">{extraction.source === 'donut-live' ? 'Receipt service result � review fields' : 'Simulated receipt fixture'}</p>
-          {extraction.source === 'donut-live' && <p className="mt-2 text-[11px] leading-5 text-ink-muted">Smart Invoice: {extraction.smart_invoice_valid === null ? 'not reported' : extraction.smart_invoice_valid ? 'reported valid by service' : 'reported invalid'} � Supplier TPIN: {extraction.supplier_tpin_verified === null ? 'not verified by service' : extraction.supplier_tpin_verified ? 'reported verified' : 'not verified'}. ZedBiz does not independently validate ZRA records.</p>}
+          <p className="text-[10px] font-extrabold uppercase tracking-widest text-brand-700">{extraction.source === 'donut-live' ? 'Service extraction · review every field' : 'Manual receipt entry'}</p>
+          {extraction.source === 'manual-entry' && <p className="mt-2 rounded-md border border-accent-100 bg-accent-50 p-3 text-xs leading-5 text-ink-muted">No receipt-reading service is connected. Read your photo and enter the values below. These details will be saved as a pending draft for your review.</p>}
+          {extraction.source === 'donut-live' && <p className="mt-2 text-[11px] leading-5 text-ink-muted">Smart Invoice: {extraction.smart_invoice_valid === null ? 'not reported' : extraction.smart_invoice_valid ? 'reported valid by service' : 'reported invalid'} · Supplier TPIN: {extraction.supplier_tpin_verified === null ? 'not verified by service' : extraction.supplier_tpin_verified ? 'reported verified' : 'not verified'}. ZedBiz does not independently validate ZRA records.</p>}
           {receiptAlerts.map((alert) => <p key={alert.item} className="mt-2 rounded-md border border-accent-100 bg-accent-50 p-3 text-xs leading-5 text-ink-muted">Price check for {alert.item}: recorded unit price is {alert.percentIncrease}% above the last confirmed purchase. Check receipt and quantity before acting.</p>)}
-          {extraction.source === 'donut-simulated' ? <p className="mt-2 rounded-md border border-accent/30 bg-[#1b1913] p-3 text-xs leading-5 text-ink-muted">This sample was not read from your photo. No receipt model is connected, so the example values cannot be saved to your business ledger.</p> : <>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-ink-muted">Supplier<input className="field mt-1 h-10" value={supplier} onChange={(event) => setSupplier(event.target.value)} /></label><label className="text-xs font-semibold text-ink-muted">Receipt date<input className="field mt-1 h-10" type="date" value={extraction.date || ''} onChange={(event) => updateExtraction('date', event.target.value)} /></label><label className="text-xs font-semibold text-ink-muted">COGS (ZMW)<input className="field mt-1 h-10 tabular-nums" inputMode="decimal" value={extraction.cogs_amount ?? ''} onChange={(event) => updateExtraction('cogs_amount', Number(event.target.value))} /></label><label className="text-xs font-semibold text-ink-muted">Other expense (ZMW)<input className="field mt-1 h-10 tabular-nums" inputMode="decimal" value={extraction.expense_amount ?? ''} onChange={(event) => updateExtraction('expense_amount', Number(event.target.value))} /></label><label className="text-xs font-semibold text-ink-muted sm:col-span-2">Total (ZMW)<input className="field mt-1 h-10 tabular-nums" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} /></label></div>
-            <div className="mt-4"><p className="text-xs font-bold">Line items</p><div className="mt-2 space-y-2">{extraction.line_items.map((item, index) => <div key={`${index}-${item.description}`} className="grid gap-2 rounded-md border border-line p-3 sm:grid-cols-[1fr_5rem_7rem]"><label className="text-[11px] font-semibold text-ink-muted">Description<input className="field mt-1 h-9" value={item.description} onChange={(event) => updateLineItem(index, 'description', event.target.value)} /></label><label className="text-[11px] font-semibold text-ink-muted">Qty<input className="field mt-1 h-9" type="number" min="0" step="any" value={item.quantity} onChange={(event) => updateLineItem(index, 'quantity', Number(event.target.value))} /></label><label className="text-[11px] font-semibold text-ink-muted">Unit price<input className="field mt-1 h-9" type="number" min="0" step="any" value={item.unit_price} onChange={(event) => updateLineItem(index, 'unit_price', Number(event.target.value))} /></label></div>)}</div></div>
-            <p className="mt-3 text-[11px] text-ink-muted">Extracted line item total {formatKwacha(extraction.line_items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0))} � confidence {Math.round((Number(extraction.confidence) || 0) * 100)}%</p>
-            <Button className="mt-4 w-full" icon={Check} loading={busy} disabled={isSyntheticDemo || !supplier.trim() || Number(amount) <= 0} onClick={queueReceipt}>Add draft for review</Button>
-          </>}
+          <>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-ink-muted">Supplier<input className="field mt-1 h-10" maxLength={100} value={supplier} onChange={(event) => setSupplier(event.target.value)} placeholder="Name shown on receipt" /></label><label className="text-xs font-semibold text-ink-muted">Receipt date<input className="field mt-1 h-10" type="date" value={extraction.date || ''} onChange={(event) => updateExtraction('date', event.target.value)} /></label><label className="text-xs font-semibold text-ink-muted">This receipt is for<select className="field mt-1 h-10" value={purchaseType} onChange={(event) => setPurchaseType(event.target.value)}><option value="stock">Stock or goods for resale</option><option value="expense">Operating expense</option><option value="mixed">Stock and other business costs</option></select></label><label className="text-xs font-semibold text-ink-muted">Total (ZMW)<input className="field mt-1 h-10 tabular-nums" type="number" min="0.01" step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" /></label>{purchaseType === 'mixed' && <><label className="text-xs font-semibold text-ink-muted">Stock cost / COGS (ZMW)<input className="field mt-1 h-10 tabular-nums" type="number" min="0" step="0.01" inputMode="decimal" value={extraction.cogs_amount || ''} onChange={(event) => updateExtraction('cogs_amount', Number(event.target.value))} placeholder="0.00" /></label><label className="text-xs font-semibold text-ink-muted">Other business cost (ZMW)<input className="field mt-1 h-10 tabular-nums" type="number" min="0" step="0.01" inputMode="decimal" value={extraction.expense_amount || ''} onChange={(event) => updateExtraction('expense_amount', Number(event.target.value))} placeholder="0.00" /></label></>}</div>
+            <div className="mt-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold">Receipt line items <span className="font-normal text-ink-muted">(optional)</span></p><p className="mt-1 text-[10px] text-ink-muted">Item prices help compare future supplier receipts.</p></div><Button size="sm" variant="secondary" icon={Plus} onClick={addReceiptLine}>Add item</Button></div><div className="mt-2 space-y-2">{extraction.line_items.map((item, index) => <div key={`${index}-${item.description}`} className="grid gap-2 rounded-md border border-line p-3 sm:grid-cols-[1fr_5rem_7rem]"><label className="text-[11px] font-semibold text-ink-muted">Description<input className="field mt-1 h-9" maxLength={100} value={item.description} onChange={(event) => updateLineItem(index, 'description', event.target.value)} /></label><label className="text-[11px] font-semibold text-ink-muted">Qty<input className="field mt-1 h-9" type="number" min="0" step="any" value={item.quantity} onChange={(event) => updateLineItem(index, 'quantity', Number(event.target.value))} /></label><label className="text-[11px] font-semibold text-ink-muted">Unit price<input className="field mt-1 h-9" type="number" min="0" step="any" value={item.unit_price} onChange={(event) => updateLineItem(index, 'unit_price', Number(event.target.value))} /></label></div>)}</div></div>
+            {extraction.source === 'donut-live' && <p className="mt-3 text-[11px] text-ink-muted">Line item total {formatKwacha(extraction.line_items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0))} · service confidence {Math.round((Number(extraction.confidence) || 0) * 100)}% (review required)</p>}
+            <p className="mt-3 text-[10px] leading-5 text-ink-muted">The receipt photo is saved in this browser and attached to the pending draft. It is not synced to cloud storage in this prototype. If a vision endpoint is configured, the image is also sent to that service; otherwise, you enter the values yourself.</p>
+            <Button className="mt-4 w-full" icon={Check} loading={busy} disabled={isSyntheticDemo || !file || !supplier.trim() || Number(amount) <= 0} onClick={queueReceipt}>Add receipt draft for review</Button>
+          </>
         </div>}
         {isSyntheticDemo && <p className="mt-3 text-xs text-ink-muted">Return to your live ledger to add or edit entries.</p>}
       </Card>}
@@ -153,4 +209,3 @@ export default function CapturePage() {
     </div>
   </main>;
 }
-

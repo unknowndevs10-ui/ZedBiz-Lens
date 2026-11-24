@@ -1,122 +1,69 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowRight, Pause, Play } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Camera, Check, CircleDot, Database, Landmark, Mic2, Network, Radio, ReceiptText, ShieldCheck, Sparkles } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../common/Button';
 
-const slides = [
-  {
-    eyebrow: 'For business owners in Zambia',
-    title: <>Zambia's businesses, <span>connected.</span></>,
-    description: 'From market stalls to neighborhood shops, bring everyday business records into a clearer picture with ZedBiz Lens.',
-    image: 'https://images.pexels.com/photos/28112436/pexels-photo-28112436.jpeg?auto=compress&cs=tinysrgb&w=1800',
-    alt: 'Market trader selling tomatoes at an outdoor stall',
-    credit: 'Photo: Kayode Adedeji - Pexels',
-  },
-  {
-    eyebrow: 'A clearer view of daily trade',
-    title: <>Everyday trade. <span>Better understood.</span></>,
-    description: 'Keep sales, costs and business activity together, so owners can see what is happening and choose their next step.',
-    image: 'https://images.pexels.com/photos/20068076/pexels-photo-20068076.jpeg?auto=compress&cs=tinysrgb&w=1800',
-    alt: 'Small business owner standing at an outdoor market stall',
-    credit: 'Photo: Victor Oluwayoju - Pexels',
-  },
-  {
-    eyebrow: 'One business ecosystem',
-    title: <>Independent businesses. <span>One brighter picture.</span></>,
-    description: 'ZedBiz brings practical records and useful insights closer together for traders, shops and growing businesses across Zambia.',
-    image: 'https://images.pexels.com/photos/40977565/pexels-photo-40977565.jpeg?auto=compress&cs=tinysrgb&w=1800',
-    alt: 'Shopkeeper seated inside a small neighborhood convenience store',
-    credit: 'Photo: Taiye Salawu - Pexels',
-  },
+const previewRecords = [
+  { icon: ArrowUpRight, label: 'Tomatoes · sale', amount: '+ K600', color: 'text-success' },
+  { icon: ReceiptText, label: 'Stock · wholesale', amount: '− K400', color: 'text-ink' },
+  { icon: CircleDot, label: 'Transport · expense', amount: '− K50', color: 'text-ink' },
 ];
 
-const networkNodes = [
-  { label: 'Market traders', className: 'hero-network__node--market' },
-  { label: 'Local shops', className: 'hero-network__node--shops' },
-  { label: 'Growing services', className: 'hero-network__node--services' },
+const systemLayers = [
+  { number: '01', title: 'Access & capture', text: 'Voice, text, receipts and mobile-money messages. Offline drafts wait safely for a connection.', icon: Camera },
+  { number: '02', title: 'Business record', text: 'Sales connect to stock, costs, suppliers, customer credit and cash checks with source detail.', icon: Database },
+  { number: '03', title: 'AI interpretation', text: 'Local language and intent rules prepare drafts and explain patterns. The owner approves every change.', icon: Sparkles },
+  { number: '04', title: 'Finance & ZRA readiness', text: 'A deterministic rules engine calculates management totals and illustrative tax scenarios.', icon: Landmark },
+  { number: '05', title: 'Connectivity ecosystem', text: 'Designed for wider access. Zamtel SMS/USSD and ZRA services remain proposed until authorized and connected.', icon: Radio },
 ];
 
 export default function Hero() {
   const navigate = useNavigate();
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [interacting, setInteracting] = useState(false);
-  const [businessPrompt, setBusinessPrompt] = useState('');
-  const slide = slides[activeSlide];
-
-  useEffect(() => {
-    if (paused || interacting || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % slides.length), 6500);
-    return () => window.clearInterval(timer);
-  }, [paused, interacting]);
-
-  const moveSlide = (step) => setActiveSlide((current) => (current + step + slides.length) % slides.length);
-  const launchDemo = () => {
-    const prompt = businessPrompt.toLowerCase();
-    const scenario = /tomato|trader|market|produce/.test(prompt) ? 'tomato' : /auto|spare|parts|kitwe/.test(prompt) ? 'auto-spares' : 'mini-mart';
-    navigate(`/demo/${scenario}`);
-  };
 
   return (
-    <section className="landing-hero relative overflow-hidden border-b border-line" onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false); }}>
-      <div className="landing-hero__glow" aria-hidden="true" />
-      <div className="mx-auto grid max-w-7xl items-center gap-9 px-5 py-9 sm:px-8 sm:py-12 lg:min-h-[620px] lg:grid-cols-[.9fr_1.1fr] lg:gap-12 lg:py-14">
-        <div className="relative z-10 max-w-xl">
-          <p className="eyebrow flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent" /> {slide.eyebrow}</p>
-          <div key={activeSlide} className="hero-copy-enter">
-            <h1 className="mt-5 text-[2.7rem] font-extrabold leading-[1.04] tracking-[-.05em] sm:text-6xl lg:text-[4.35rem]">{slide.title}</h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-ink-muted sm:text-lg">{slide.description}</p>
-          </div>
-          <div className="mt-7 max-w-lg rounded-xl border border-line bg-[#101718] p-3 sm:p-4">
-            <label htmlFor="business-prompt" className="text-[10px] font-extrabold uppercase tracking-[.16em] text-ink-muted">What kind of business do you run?</label>
-            <div className="mt-2 flex gap-2"><input id="business-prompt" value={businessPrompt} onChange={(event) => setBusinessPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') launchDemo(); }} placeholder="e.g. Tomato trader in Lusaka" className="field h-11 min-w-0 flex-1" maxLength={100} /><Button size="md" icon={ArrowRight} onClick={launchDemo}>Launch demo</Button></div>
-            <div className="mt-3 flex flex-wrap gap-2">{[['Soweto Market tomato trader', 'tomato'], ['Kabulonga mini-mart', 'mini-mart'], ['Kitwe auto-spares shop', 'auto-spares']].map(([preset, scenario]) => <button key={preset} type="button" onClick={() => navigate(`/demo/${scenario}`)} className="rounded-full border border-line px-2.5 py-1.5 text-[10px] font-semibold text-ink-muted transition-colors hover:border-brand-500 hover:text-ink">{preset}</button>)}</div>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <Button to="/login" variant="secondary" size="md">Team sign in</Button>
-            <a href="/how-it-works" className="inline-flex h-11 items-center gap-2 px-2 text-sm font-bold text-ink-muted transition-colors hover:text-ink focus-ring">How it works <ArrowDown className="h-4 w-4" /></a>
-          </div>
-          <div className="mt-8 flex items-center gap-3 text-xs text-ink-muted">
-            <div className="flex items-center gap-1.5" role="group" aria-label="Homepage slides">
-              {slides.map((item, index) => (
-                <button key={item.eyebrow} type="button" onClick={() => setActiveSlide(index)} className={`hero-slide-dot ${index === activeSlide ? 'is-active' : ''}`} aria-label={`Show slide ${index + 1}: ${item.eyebrow}`} aria-current={index === activeSlide ? 'true' : undefined} />
-              ))}
+    <>
+      <section className="landing-hero relative overflow-hidden border-b border-line">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-8 sm:px-7 sm:py-12 lg:min-h-[620px] lg:grid-cols-[.88fr_1.12fr] lg:gap-14 lg:px-10 lg:py-14">
+          <div className="relative z-10 max-w-xl">
+            <p className="eyebrow flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-accent" /> BUILT FOR THE WAY ZAMBIA DOES BUSINESS</p>
+            <h1 className="mt-5 text-[2.7rem] font-extrabold leading-[1.02] tracking-[-.055em] sm:text-6xl lg:text-[4.4rem]">Run your business.<br /><span className="text-brand-600">See the whole picture.</span></h1>
+            <p className="mt-5 max-w-lg text-base leading-7 text-ink-muted sm:text-lg">ZedBiz Lens connects the layers behind an organized business: everyday capture, linked records, AI interpretation, deterministic finance and tax readiness, and a future connectivity layer.</p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Button to="/login?mode=signup" size="lg" icon={ArrowRight}>Create your workspace</Button>
+              <Button type="button" variant="secondary" size="lg" onClick={() => navigate('/demo/tomato')}>Explore a sample business</Button>
             </div>
-            <span aria-hidden="true">0{activeSlide + 1} <span className="text-ink-muted/60">/ 0{slides.length}</span></span>
-            <div className="ml-auto flex items-center gap-1">
-              <button type="button" className="hero-control" onClick={() => moveSlide(-1)} aria-label="Previous slide"><ArrowLeft className="h-4 w-4" /></button>
-              <button type="button" className="hero-control" onClick={() => moveSlide(1)} aria-label="Next slide"><ArrowRight className="h-4 w-4" /></button>
-              <button type="button" className="hero-control" onClick={() => setPaused((current) => !current)} aria-label={paused ? 'Play slides' : 'Pause slides'} title={paused ? 'Play slides' : 'Pause slides'}>{paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative min-h-[340px] sm:min-h-[450px] lg:min-h-[510px]" role="group" aria-label="Representative businesses connected through ZedBiz Lens">
-          <div className="hero-photo-frame absolute inset-0 overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#121a1b] shadow-pop">
-            <img key={slide.image} className="hero-photo" src={slide.image} alt={slide.alt} fetchPriority="high" />
-            <div className="hero-photo-shade" aria-hidden="true" />
-            <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 p-5 sm:p-7">
-              <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-white/65">ZedBiz Lens | Zambia</p>
-                <p className="mt-1.5 text-xl font-extrabold tracking-tight text-white sm:text-2xl">A connected business picture.</p>
-              </div>
-              <div className="hidden rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-right backdrop-blur-md sm:block">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">The idea</p>
-                <p className="mt-1 text-xs font-bold text-white">Records <span className="text-accent">/</span> insight <span className="text-accent">/</span> growth</p>
-              </div>
+            <p className="mt-3 text-xs leading-5 text-ink-muted">Sample records are clearly labelled and kept separate from your business ledger.</p>
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-5 text-xs font-semibold text-ink-muted">
+              <span className="inline-flex items-center gap-2"><Mic2 className="h-4 w-4 text-brand-600" /> Voice or text capture</span>
+              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-brand-600" /> You confirm every record</span>
             </div>
           </div>
 
-          <svg className="hero-network-lines" viewBox="0 0 500 370" fill="none" aria-hidden="true">
-            <path d="M251 180 95 72M251 180 405 82M251 180 390 303" />
-            <circle cx="251" cy="180" r="82" />
-            <circle className="hero-network-pulse" cx="251" cy="180" r="82" />
-          </svg>
-          <div className="hero-network__hub" aria-hidden="true"><span className="hero-network__hub-mark">Z</span><span>ZedBiz</span></div>
-          {networkNodes.map((node) => <div key={node.label} className={`hero-network__node ${node.className}`} aria-hidden="true"><span />{node.label}</div>)}
-          <span className="hero-photo-credit">{slide.credit} | Representative African stock photography</span>
+          <div className="relative mx-auto w-full max-w-[680px] lg:ml-auto">
+            <div className="relative min-h-[390px] overflow-hidden rounded-[1.6rem] border border-line bg-[#e5ebe7] shadow-pop sm:min-h-[480px]">
+              <img className="absolute inset-0 h-full w-full object-cover object-center" src="https://images.pexels.com/photos/28112436/pexels-photo-28112436.jpeg?auto=compress&cs=tinysrgb&w=1600" alt="Market trader serving customers at an outdoor produce stall" fetchPriority="high" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#172b27]/15 via-transparent to-[#172b27]/10" aria-hidden="true" />
+              <div className="absolute left-4 top-4 z-10 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.16em] text-brand-800 shadow-card backdrop-blur sm:left-6 sm:top-6">Zambia · everyday enterprise</div>
+              <div className="absolute inset-x-3 bottom-3 z-10 max-w-[390px] rounded-2xl border border-white/80 bg-white/95 p-4 shadow-pop backdrop-blur sm:inset-x-auto sm:bottom-7 sm:left-7 sm:p-5">
+                <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
+                  <div><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-brand-700">A day, made clearer</p><p className="mt-1 text-sm font-extrabold">Market trader · sample preview</p></div>
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-700"><Sparkles className="h-4 w-4" /></span>
+                </div>
+                <div className="mt-3 space-y-2">{previewRecords.map(({ icon: Icon, label, amount, color }) => <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-surface px-3 py-2"><span className="flex items-center gap-2 text-xs font-semibold text-ink-muted"><Icon className="h-3.5 w-3.5 text-brand-600" />{label}</span><span className={`text-xs font-extrabold tabular-nums ${color}`}>{amount}</span></div>)}</div>
+                <div className="mt-3 flex items-center justify-between border-t border-line pt-3"><span className="text-[11px] font-semibold text-ink-muted">Drafts for your review</span><span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-extrabold text-brand-700"><Check className="h-3 w-3" /> Owner approval</span></div>
+              </div>
+              <div className="absolute right-4 top-16 z-10 hidden rounded-xl border border-white/80 bg-white/95 p-3 shadow-card backdrop-blur sm:block lg:right-6 lg:top-20"><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-50 text-accent-800"><Camera className="h-4 w-4" /></span><div><p className="text-[10px] font-bold text-ink-muted">INPUTS</p><p className="text-xs font-extrabold">Voice · text · receipt</p></div></div></div>
+              <span className="absolute bottom-2 right-3 z-10 rounded-full bg-black/50 px-2 py-1 text-[8px] font-semibold text-white/90 backdrop-blur">Photo: Kayode Adedeji · Pexels</span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1 text-[10px] font-semibold text-ink-muted"><span>Capture <span className="px-1 text-brand-500">›</span> Review <span className="px-1 text-brand-500">›</span> Confirm <span className="px-1 text-brand-500">›</span> Understand</span><Link to="/how-it-works" className="inline-flex items-center gap-1 text-brand-700 hover:underline">See how it works <ArrowRight className="h-3 w-3" /></Link></div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-7 sm:py-14 lg:px-10" aria-label="ZedBiz Lens system layers">
+        <div className="max-w-2xl"><p className="eyebrow">THE SYSTEM UNDER THE WORKSPACE</p><h2 className="mt-2 text-2xl font-extrabold tracking-[-.04em] sm:text-3xl">Five connected layers. One clearer business picture.</h2><p className="mt-2 text-sm leading-6 text-ink-muted">The interface is only the access point. Each layer prepares trusted context for the next, while the owner stays in control.</p></div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{systemLayers.map(({ number, title, text, icon: Icon }) => <article key={number} className="relative rounded-2xl border border-line bg-white p-4 shadow-card sm:p-5"><div className="flex items-center justify-between"><span className="text-[10px] font-extrabold tracking-[.18em] text-brand-600">LAYER {number}</span><span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon className="h-4 w-4" /></span></div><h3 className="mt-4 text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-5 text-ink-muted">{text}</p></article>)}</div>
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-xs leading-5 text-ink-muted"><Network className="h-4 w-4 shrink-0 text-brand-700" /><span><strong className="text-ink">AI supports the workflow across layers.</strong> It interprets records and surfaces patterns; it never authorizes ledger changes or performs tax arithmetic.</span></div>
+      </section>
+    </>
   );
 }

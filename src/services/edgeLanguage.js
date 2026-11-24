@@ -2,21 +2,27 @@ import { addDays, todayISO } from '../utils/format.js';
 
 const MONEY = /(?:\bK\s*|\bZK\s*|\bZMW\s*)(\d[\d,]*(?:\.\d{1,2})?)|\b(\d[\d,]*(?:\.\d{1,2})?)\s*(?:kwacha|zmw)\b/gi;
 const TAX_OR_FILING = /\b(tax|vat|file|filing|return|registration|liable|deduct|submit)\b/i;
-const INCOME_WORDS = /\b(sold|sell|sales|earned|received|income|customer paid|client paid|nagulisa|nagulitsa|nagulisha|tengesa|tengesa|watengesa)\b/i;
+const SALE_WORDS = /\b(sold|sell|sales|earned|received|income|customer paid|client paid|nagulisa|ndagulisa|nagulitsa|ndagulitsa|nagulisha|tengesa|watengesa|nashitisha|twashitisha|shitisha)\b/i;
+const PURCHASE_WORDS = /\b(bought|buy|purchase|purchased|restock|restocked|ndagula|nagul(a|e)|nashita|twashita|shit(a|e)|katundu|zogula|zogulitsa)\b/i;
+const PAYMENT_WORDS = /\b(paid|pay|spent|expense|cost|fee|charged|ndalipira|nalipira|lipira|nalipe|nafut(a|ile)|fut(a|ile))\b/i;
+const CUSTOMER_TAKEN_WORDS = /\b(customer|client|watenga|atenga|anatenga|batenga|atwala|batwala|atola|batola|watola)\b/i;
 const CREDIT_WORDS = /\b(on credit|credit|pa ngongole|ngongole)\b/i;
 const CASH_COUNT_WORDS = /\b(cash count|counted cash|cash counted|cash left in (?:the )?(?:till|drawer)|closing cash|cash close)\b/i;
 const OWNER_DRAW_WORDS = /\b(personal transfer|personal use|family transfer|sent to family|owner withdrawal|owner drawing|personal drawing)\b/i;
 const EXPENSE_CATEGORIES = [
   [/owner personal withdrawal|owner withdrawal|personal drawing|drawings/i, 'Owner personal withdrawal'],
   [/spoilage|wastage|damaged stock|unsold stock|expired stock/i, 'Spoilage & wastage'],
-  [/mobile money fee|momo fee|transaction fee|transfer fee|airtel money fee|mtn fee|zamtel fee/i, 'Mobile money fees'],
-  [/transport|fuel|taxi|\bbus\b|fare|delivery|ride/i, 'Transport'],
-  [/rent/i, 'Rent'],
-  [/electric|zesco|water|airtime|data bundle|bill|tokens|wifi/i, 'Utilities'],
-  [/wage|salary|assistant|helper|staff/i, 'Wages'],
-  [/levy|market fee|council|ticket/i, 'Market fees'],
-  [/stock|goods|inventory|wholesale|supplies|restock|bought|buy|purchase|products|extensions|crates/i, 'Stock purchases'],
+  [/mobile money fee|momo fee|transaction fee|transfer fee|airtel(?: money)? fee|mtn fee|zamtel fee/i, 'Mobile money fees'],
+  [/transport|fuel|taxi|\bbus\b|fare|delivery|ride|ulendo|basi|ubusendo/i, 'Transport'],
+  [/rent|lendi|renti/i, 'Rent'],
+  [/electric|zesco|water|amanzi|madzi|magetsi|airtime|data bundle|bill|tokens|wifi/i, 'Utilities'],
+  [/wage|salary|assistant|helper|staff|malipiro|amalipilo/i, 'Wages'],
+  [/levy|market fee|council|ticket|msika|msonkho wa msika/i, 'Market fees'],
+  [/stock|goods|inventory|wholesale|supplies|restock|bought|buy|purchase|products|extensions|crates|katundu|zogula|zogulitsa|masamba|tomato|fish|chimanga/i, 'Stock purchases'],
 ];
+
+const PERSONAL_WORDS = /\b(personal transfer|personal use|family transfer|sent to family|owner withdrawal|owner drawing|personal drawing|ndatuma|natumiza|natuma|natumizila)\b/i;
+const PERSONAL_RECIPIENTS = /\b(my own|myself|family|personal|banja|mkazi|mwamuna|kwanga|zanga|ku banja|kwa banja|ng'anda)\b/i;
 
 const amountMentions = (text) => [...String(text).matchAll(MONEY)].map((match) => ({
   amount: Number((match[1] || match[2]).replace(/,/g, '')),
@@ -26,15 +32,18 @@ const amountMentions = (text) => [...String(text).matchAll(MONEY)].map((match) =
 function splitClauses(source) {
   return String(source)
     .replace(/\b(Mr|Mrs|Ms|Dr)\./gi, '$1<dot>')
-    .split(/[;\n]+|,(?=\s*[A-Za-z])|\.(?!\d)|\s+\b(?:then|after that)\b\s+/i)
-    .map((part) => part.replace(/<dot>/g, '.').trim())
+    .split(/[;\n]+|,(?=\s*[A-Za-z])|\.(?!\d)|\s+\b(?:then|after that|ndipo|elyo|nangu)\b\s+/i)
+    .map((part) => part.replace(/<dot>/g, '.').replace(/^\s*(?:ndipo|elyo|nangu)\s+/i, '').trim())
     .filter(Boolean);
 }
 
 function languageOf(text) {
   const value = text.toLowerCase();
-  if (/\b(nagulisa|tengesa|pa credit|watenga)\b/.test(value)) return 'Nyanja / Zanglish phrase match';
-  if (/\b(nagulisha|nagulitsa|ngongole)\b/.test(value)) return 'Bemba / Nyanja phrase match';
+  const nyanja = /\b(nagulisa|ndagulisa|nagulitsa|ndagulitsa|tengesa|watenga|ngongole|katundu|ndalipira|nagul(a|e)|ndalama|banja|msika)\b/.test(value);
+  const bemba = /\b(nashitisha|twashitisha|nashita|twashita|nafut(a|ile)|nalipe|ng'anda|ubusendo|ifintu)\b/.test(value);
+  if (nyanja && bemba) return 'Bemba/Nyanja mixed phrase match';
+  if (nyanja) return 'Nyanja phrase match';
+  if (bemba) return 'Bemba phrase match';
   return 'English or mixed-language phrase match';
 }
 
@@ -44,14 +53,18 @@ function counterpartyOf(text) {
 }
 
 function makeTransactionDraft(clause, amount) {
-  const income = INCOME_WORDS.test(clause) || CREDIT_WORDS.test(clause);
-  const personalDraw = OWNER_DRAW_WORDS.test(clause);
+  const sale = SALE_WORDS.test(clause);
+  const purchase = PURCHASE_WORDS.test(clause);
+  const customerTook = CUSTOMER_TAKEN_WORDS.test(clause);
+  const personalDraw = OWNER_DRAW_WORDS.test(clause) || (PERSONAL_WORDS.test(clause) && PERSONAL_RECIPIENTS.test(clause));
   const credit = CREDIT_WORDS.test(clause);
+  const creditSale = credit && (sale || customerTook);
+  const income = !personalDraw && !purchase && (sale || creditSale);
   const matchedCategory = EXPENSE_CATEGORIES.find(([pattern]) => pattern.test(clause))?.[1];
   const type = personalDraw ? 'owner_withdrawal' : income ? 'income' : 'expense';
-  const category = personalDraw ? 'Owner personal withdrawal' : income ? 'Sales' : matchedCategory || 'Other expenses';
+  const category = personalDraw ? 'Owner personal withdrawal' : income ? 'Sales' : matchedCategory || (purchase ? 'Stock purchases' : 'Other expenses');
   const languageEvidence = languageOf(clause);
-  const keyword = clause.match(/\b(nagulisa|nagulitsa|nagulisha|tengesa|tengesa|watengesa|sold|transport|credit|ngongole|personal transfer)\b/i)?.[1];
+  const keyword = clause.match(/\b(nagulisa|ndagulisa|nagulitsa|ndagulitsa|nagulisha|nashitisha|nashita|nafut(a|ile)|nalipe|tengesa|watenga|watwala|sold|transport|credit|ngongole|personal transfer)\b/i)?.[1];
   const quantityMatch = clause.match(/\b(\d+(?:\.\d+)?)\s*(crates?|boxes?|bags?|units?|items?|pieces?|kg|kilograms?)\s*(?:ya|of|za)?\s*([a-z][a-z-]*)?/i);
   const quantity = quantityMatch ? Number(quantityMatch[1]) : null;
   const itemName = quantityMatch?.[3] || clause.match(/\b(?:tomatoes?|onions?|potatoes?|cabbage|vegetables?|fish|eggs?)\b/i)?.[0] || '';
@@ -63,7 +76,7 @@ function makeTransactionDraft(clause, amount) {
       description: clause.slice(0, 80),
       amount,
       date: /\byesterday\b/i.test(clause) ? addDays(todayISO(), -1) : todayISO(),
-      paymentMethod: credit ? 'credit' : /cash|notes|coins/i.test(clause) ? 'cash' : /momo|mobile money|airtel|mtn|zamtel/i.test(clause) ? 'mobile_money' : 'unspecified',
+      paymentMethod: credit && (income || purchase) ? 'credit' : /cash|notes|coins/i.test(clause) ? 'cash' : /momo|mobile money|airtel|mtn|zamtel/i.test(clause) ? 'mobile_money' : 'unspecified',
       counterparty: counterpartyOf(clause),
       itemName: itemName.slice(0, 80),
       quantity,
@@ -94,10 +107,14 @@ export function parseEveningWrapUp(input) {
       continue;
     }
     if (amounts.length !== 1) {
-      if (amounts.length || /\b(sold|spent|paid|bought|nagulisa|nagulisha|transport|rent|credit|ngongole)\b/i.test(clause)) unparsed.push({ text: clause, reason: amounts.length ? 'This clause has more than one amount; split it into one fact per amount.' : 'I found a business action but no explicit Kwacha amount.' });
+    if (amounts.length || SALE_WORDS.test(clause) || PURCHASE_WORDS.test(clause) || PAYMENT_WORDS.test(clause) || PERSONAL_WORDS.test(clause) || CREDIT_WORDS.test(clause)) unparsed.push({ text: clause, reason: amounts.length ? 'This clause has more than one amount; split it into one fact per amount.' : 'I found a business action but no explicit Kwacha amount.' });
       continue;
     }
-    const hasBusinessCue = INCOME_WORDS.test(clause) || CREDIT_WORDS.test(clause) || OWNER_DRAW_WORDS.test(clause)
+    if (SALE_WORDS.test(clause) && PURCHASE_WORDS.test(clause)) {
+      unparsed.push({ text: clause, reason: 'This clause mentions both a sale and a purchase. Split them into separate facts so amounts are not assigned incorrectly.' });
+      continue;
+    }
+    const hasBusinessCue = SALE_WORDS.test(clause) || (CREDIT_WORDS.test(clause) && (CUSTOMER_TAKEN_WORDS.test(clause) || PURCHASE_WORDS.test(clause))) || PURCHASE_WORDS.test(clause) || PAYMENT_WORDS.test(clause) || OWNER_DRAW_WORDS.test(clause) || (PERSONAL_WORDS.test(clause) && PERSONAL_RECIPIENTS.test(clause))
       || EXPENSE_CATEGORIES.some(([pattern]) => pattern.test(clause))
       || /\b(paid|spent|bought|purchase|purchased|cost|fee|charges|money out|money in)\b/i.test(clause);
     if (!hasBusinessCue) {
@@ -111,7 +128,7 @@ export function parseEveningWrapUp(input) {
 }
 
 export function detectMomoPersonalTransfer(text) {
-  return OWNER_DRAW_WORDS.test(String(text || '')) || /\b(?:sent|paid|transfer(?:red)?)\b.*\b(?:my own|myself|family|personal)\b/i.test(String(text || ''));
+  const value = String(text || '');
+  return OWNER_DRAW_WORDS.test(value) || (PERSONAL_WORDS.test(value) && PERSONAL_RECIPIENTS.test(value)) || /\b(?:sent|paid|transfer(?:red)?)\b.*\b(?:my own|myself|family|personal)\b/i.test(value);
 }
-
 

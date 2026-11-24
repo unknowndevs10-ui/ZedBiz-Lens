@@ -83,4 +83,3 @@ export default async function handler(req, res) {
     return fail(res, 502, 'Private voice is temporarily unavailable.');
   }
 }
-

@@ -28,15 +28,6 @@ export default function WelcomeExperience({ ready, profile, openSignal = 0 }) {
     if (ready && openSignal > 0) setOpen(true);
   }, [openSignal, ready]);
 
-  useEffect(() => {
-    if (!ready || !open || speaking) return;
-    setError('');
-    setSpeaking(true);
-    speakBusinessText(script, profile?.language || 'English')
-      .catch((cause) => setError(cause.message || 'Automatic playback was blocked. Choose Play welcome to hear the short introduction.'))
-      .finally(() => setSpeaking(false));
-  }, [ready, open, script, profile?.language]);
-
   function close() {
     stopSpeaking();
     setSpeaking(false);
@@ -72,7 +63,7 @@ export default function WelcomeExperience({ ready, profile, openSignal = 0 }) {
       <section aria-label="Welcome to ZedBiz Lens" className="mb-5 overflow-hidden rounded-2xl border border-line bg-[#121a1b] shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
           <div><p className="eyebrow">Your welcome guide</p><h2 className="mt-0.5 text-sm font-extrabold">Welcome to ZedBiz Lens</h2></div>
-          <span className="rounded-full border border-line px-2.5 py-1 text-[10px] font-bold text-ink-muted">Short introduction � about 30 seconds</span>
+          <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-[10px] font-bold text-ink-muted">Optional voice · about 30 seconds</span>
         </div>
         <div className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] sm:items-center sm:p-5">
         <div className="overflow-hidden rounded-xl border border-line bg-[#0d1415]">
@@ -82,11 +73,11 @@ export default function WelcomeExperience({ ready, profile, openSignal = 0 }) {
         <div className="relative"><WaveField speaking={speaking} animationEnabled={motionEnabled} className="px-1" /><button type="button" onClick={toggleMotion} aria-pressed={!motionEnabled} className="focus-ring absolute bottom-2 right-3 inline-flex items-center gap-1.5 rounded-full border border-line bg-[#111819]/90 px-2.5 py-1.5 text-[10px] font-bold text-ink-muted hover:text-ink"><Waves className="h-3.5 w-3.5" />Motion {motionEnabled ? 'on' : 'off'}</button></div>
         <div className="border-t border-line px-4 py-4">
           <p className="text-sm font-extrabold">Every kwacha has a story. See the whole picture.</p>
-          <p className="mt-1 text-xs leading-5 text-ink-muted">{profile?.language && profile.language !== 'English' ? `${profile.language} greeting � business guidance remains in English while local-language support is validated.` : 'A guide to recording, reviewing and understanding your business activity.'}</p>
+          <p className="mt-1 text-xs leading-5 text-ink-muted">{profile?.language && profile.language !== 'English' ? `${profile.language} greeting · business guidance remains in English while local-language support is validated.` : 'A guide to recording, reviewing and understanding your business activity.'}</p>
         </div>
       </div>
       <div>
-      <p className="text-sm leading-6 text-ink-muted">A short introduction to recording activity and understanding your business signals. Playback starts automatically when the dashboard opens, when your browser allows it.</p>
+      <p className="text-sm leading-6 text-ink-muted">A short introduction to recording activity and understanding your business signals. Choose play when it suits you; the workspace is ready either way.</p>
       <details className="mt-3 rounded-lg border border-line bg-[#0e1516] p-3">
         <summary className="cursor-pointer text-xs font-bold text-brand-700">Read the complete introduction</summary>
         <div className="mt-3 max-h-44 space-y-3 overflow-y-auto pr-1 text-xs leading-5 text-ink-muted">{fullScript.split('\n\n').map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
@@ -97,10 +88,9 @@ export default function WelcomeExperience({ ready, profile, openSignal = 0 }) {
         <Button icon={speaking ? Pause : Play} onClick={toggleSpeech}>{speaking ? 'Stop voice welcome' : 'Play voice welcome'}</Button>
         <Button variant="secondary" icon={Check} onClick={close}>Skip introduction</Button>
       </div>
-      <div className="mt-3 flex items-start gap-2 text-[10px] leading-4 text-ink-muted"><AudioLines className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-700" /><span>If your browser blocks autoplay, choose Play welcome once to allow it. You can skip this guide or replay it from the dashboard. Motion follows your reduced-motion preference.</span></div>
+      <div className="mt-3 flex items-start gap-2 text-[10px] leading-4 text-ink-muted"><AudioLines className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-700" /><span>You can skip the introduction or replay it from the dashboard. Motion follows your reduced-motion preference.</span></div>
       </div>
       </div>
       </section>
   );
 }
-

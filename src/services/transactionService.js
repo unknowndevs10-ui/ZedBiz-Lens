@@ -20,6 +20,8 @@ export function normalizeTransaction(raw) {
     confidence: raw.confidence ?? null, // 0..1 or null
     entryId: raw.entryId ?? raw.entry_id ?? null,
     source: raw.source ?? raw.original_text ?? null,
+    receiptAttachmentId: raw.receiptAttachmentId ?? raw.receipt_attachment_id ?? null,
+    receiptImageName: raw.receiptImageName ?? raw.receipt_image_name ?? null,
     paymentMethod: raw.paymentMethod ?? raw.payment_method ?? 'unspecified',
     reference: raw.reference ?? raw.transaction_reference ?? null,
     counterparty: raw.counterparty ?? raw.party ?? null,
@@ -97,4 +99,3 @@ export const transactionService = {
     return api.resetDemoData();
   },
 };
-

@@ -57,7 +57,7 @@ export default function TransactionTable({ transactions, onEdit, readOnly = fals
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-muted">
               <span>{formatDate(tx.date)}</span>
-              <span aria-hidden="true">�</span>
+              <span aria-hidden="true">·</span>
               <span>{tx.category}</span>
               <Badge tone={STATUS_TONE[tx.status]} className="ml-auto">{STATUS_LABEL[tx.status]}</Badge>
             </div>
@@ -70,4 +70,3 @@ export default function TransactionTable({ transactions, onEdit, readOnly = fals
     </>
   );
 }
-

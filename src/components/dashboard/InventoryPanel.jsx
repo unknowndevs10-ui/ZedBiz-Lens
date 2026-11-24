@@ -29,14 +29,14 @@ export default function InventoryPanel({ items = [], onChange, readOnly = false 
 
   const lowCount = items.filter((item) => Number(item.quantity) <= Number(item.reorderAt)).length;
   return <Card className="mt-5">
-    <CardHeader title="Stock watch" description="Owner-entered counts � stored on this device" action={lowCount > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-accent-50 px-2.5 py-1 text-[11px] font-bold text-accent-800"><AlertTriangle className="h-3.5 w-3.5" />{lowCount} to check</span>} />
+    <CardHeader title="Stock watch" description="Owner-entered counts · stored on this device" action={lowCount > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-accent-50 px-2.5 py-1 text-[11px] font-bold text-accent-800"><AlertTriangle className="h-3.5 w-3.5" />{lowCount} to check</span>} />
     <div className="p-4 pt-3 sm:p-5 sm:pt-3">
       {items.length > 0 && <ul className="divide-y divide-line rounded-lg border border-line">
         {items.map((item) => {
           const low = Number(item.quantity) <= Number(item.reorderAt);
           const priceUp = Number(item.previousUnitCost) > 0 && Number(item.unitCost) > Number(item.previousUnitCost) * 1.05;
           return <li key={item.id} className="flex flex-wrap items-center gap-3 px-3 py-3">
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{item.name}</p><p className="mt-0.5 text-[11px] text-ink-muted">Restock at {item.reorderAt} units � unit cost {formatKwacha(item.unitCost || 0)}{priceUp ? ` � increased from ${formatKwacha(item.previousUnitCost)}` : ''}</p></div>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{item.name}</p><p className="mt-0.5 text-[11px] text-ink-muted">Restock at {item.reorderAt} units · unit cost {formatKwacha(item.unitCost || 0)}{priceUp ? ` · increased from ${formatKwacha(item.previousUnitCost)}` : ''}</p></div>
             <label className="text-[10px] font-semibold text-ink-muted">Count<Input className="mt-1 h-9 w-20" type="number" min="0" step="any" value={item.quantity} disabled={readOnly} onChange={(event) => changeItem(item.id, 'quantity', event.target.value)} /></label>
             <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${low ? 'bg-accent-50 text-accent-800' : 'bg-brand-50 text-brand-800'}`}>{low ? 'Check stock' : 'In range'}</span>
             {!readOnly && <button type="button" aria-label={`Remove ${item.name} from stock watch`} onClick={() => onChange(items.filter((entry) => entry.id !== item.id))} className="rounded-md p-2 text-ink-muted hover:bg-danger/5 hover:text-danger"><Trash2 className="h-4 w-4" /></button>}
@@ -55,4 +55,3 @@ export default function InventoryPanel({ items = [], onChange, readOnly = false 
     </div>
   </Card>;
 }
-

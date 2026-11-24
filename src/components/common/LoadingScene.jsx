@@ -16,4 +16,3 @@ export default function LoadingScene({ label = 'Preparing your workspace' }) {
     </main>
   );
 }
-

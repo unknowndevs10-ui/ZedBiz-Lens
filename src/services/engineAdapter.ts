@@ -11,7 +11,7 @@ export type ReceiptExtraction = {
   smart_invoice_valid: boolean | null;
   supplier_tpin_verified: boolean | null;
   input_vat_amount: number | null;
-  source: 'donut-live' | 'donut-simulated';
+  source: 'donut-live' | 'manual-entry';
 };
 
 const engineUrl = String(import.meta.env.VITE_ENGINE_API_URL || '').replace(/\/$/, '');
@@ -59,20 +59,20 @@ export async function extractReceipt(file: File): Promise<ReceiptExtraction> {
     return normalizeReceiptPayload(await response.json());
   }
 
-  // Offline demonstration only. This sample is not inferred from image pixels.
-  await new Promise((resolve) => window.setTimeout(resolve, 450));
+  // Without a configured vision endpoint, leave the receipt values blank.
+  // The owner can still capture the image and enter the fields for review.
   return {
-    supplier: 'Demo Wholesale Market',
+    supplier: '',
     date: todayISO(),
-    line_items: [{ description: 'Produce and shop stock (sample)', quantity: 1, unit_price: 860, amount: 860 }],
-    cogs_amount: 860,
-    expense_amount: 60,
-    total_zmw: 920,
-    confidence: 0.72,
+    line_items: [],
+    cogs_amount: 0,
+    expense_amount: 0,
+    total_zmw: 0,
+    confidence: 0,
     smart_invoice_valid: null,
     supplier_tpin_verified: null,
     input_vat_amount: null,
-    source: 'donut-simulated',
+    source: 'manual-entry',
   };
 }
 
@@ -109,7 +109,6 @@ export function receiptDraft(extraction: ReceiptExtraction) {
     type: 'expense', category: 'Stock purchases', description: extraction.supplier,
     amount: Number(extraction.total_zmw) || Number(extraction.cogs_amount) + Number(extraction.expense_amount),
     date: extraction.date || addDays(todayISO(), 0), confidence: extraction.confidence,
-    source: extraction.source === 'donut-live' ? 'Donut OCR' : 'Simulated Donut sample',
+    source: extraction.source === 'donut-live' ? 'Receipt vision service' : 'Owner-entered receipt details',
   };
 }
-

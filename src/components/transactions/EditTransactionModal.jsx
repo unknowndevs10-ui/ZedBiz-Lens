@@ -175,4 +175,3 @@ export default function EditTransactionModal({ transaction, onClose, onSave }) {
     </Modal>
   );
 }
-

@@ -53,7 +53,7 @@ export function parseMobileMoneyBatch(messages) {
     const transactionDraft = {
       type: personalOutgoing ? 'owner_withdrawal' : item.direction,
       category: personalOutgoing ? 'Owner personal withdrawal' : item.direction === 'income' ? 'Sales' : 'Other expenses',
-      description: `${personalOutgoing ? 'Personal transfer' : item.direction === 'income' ? 'Mobile-money receipt' : 'Mobile-money payment'}${item.counterparty ? ` � ${item.counterparty}` : ''}`,
+      description: `${personalOutgoing ? 'Personal transfer' : item.direction === 'income' ? 'Mobile-money receipt' : 'Mobile-money payment'}${item.counterparty ? ` · ${item.counterparty}` : ''}`,
       amount: item.amount,
       date: new Date().toISOString().slice(0, 10),
       confidence: item.confidence,
@@ -75,4 +75,3 @@ export function parseMobileMoneyBatch(messages) {
   const drafts = results.flatMap((result) => result.drafts);
   return { ok: true, results, drafts, messageCount: lines.length, draftCount: drafts.length };
 }
-

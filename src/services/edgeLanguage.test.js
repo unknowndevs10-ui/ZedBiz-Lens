@@ -16,6 +16,43 @@ test('parses a mixed Nyanja/Zanglish evening summary into separate pending draft
   assert.match(result.drafts[0].explanation, /nagulisa/i);
 });
 
+test('parses Nyanja sales, supplier stock, and transport as separate drafts', () => {
+  const result = parseEveningWrapUp('Ndagulitsa tomato pa K600, ndagula katundu pa K400, ndalipira transport K50');
+  assert.equal(result.kind, 'drafts');
+  assert.deepEqual(result.drafts.map((item) => [item.draft.type, item.draft.category, item.draft.amount]), [
+    ['income', 'Sales', 600], ['expense', 'Stock purchases', 400], ['expense', 'Transport', 50],
+  ]);
+  assert.match(result.drafts[0].explanation, /Nyanja phrase match/i);
+});
+
+test('parses Bemba sales, stock, and paid transport without treating credit as income', () => {
+  const result = parseEveningWrapUp('Nashitisha tomato pa K600, nashita katundu K400, nafuta transport K50, nashita katundu pa ngongole K900');
+  assert.equal(result.kind, 'drafts');
+  assert.deepEqual(result.drafts.map((item) => [item.draft.type, item.draft.category, item.draft.amount, item.draft.paymentMethod]), [
+    ['income', 'Sales', 600, 'unspecified'],
+    ['expense', 'Stock purchases', 400, 'unspecified'],
+    ['expense', 'Transport', 50, 'unspecified'],
+    ['expense', 'Stock purchases', 900, 'credit'],
+  ]);
+  assert.match(result.drafts[0].explanation, /Bemba phrase match/i);
+});
+
+test('records Nyanja customer credit as income and personal family transfers as owner drawings', () => {
+  const result = parseEveningWrapUp('Madam Phiri watenga tomato pa ngongole K150, Ndatuma kwa banja ndalama zanga K200');
+  assert.deepEqual(result.drafts.map((item) => [item.draft.type, item.draft.category, item.draft.amount, item.draft.paymentMethod]), [
+    ['income', 'Sales', 150, 'credit'], ['owner_withdrawal', 'Owner personal withdrawal', 200, 'unspecified'],
+  ]);
+});
+
+test('does not classify a bare debt or a mixed sale-and-purchase clause automatically', () => {
+  const bareDebt = parseEveningWrapUp('ngongole K100');
+  assert.equal(bareDebt.drafts.length, 0);
+  assert.equal(bareDebt.unparsed.length, 1);
+  const mixed = parseEveningWrapUp('sold goods and bought stock K500');
+  assert.equal(mixed.drafts.length, 0);
+  assert.match(mixed.unparsed[0].reason, /both a sale and a purchase/i);
+});
+
 test('does not invent a category for an amount without a business action', () => {
   const result = parseEveningWrapUp('K80');
   assert.equal(result.kind, 'clarify');
@@ -42,4 +79,3 @@ test('batch MoMo parser separates business receipt, fee, and personal transfer',
   assert.equal(result.drafts[1].draft.category, 'Mobile money fees');
   assert.equal(result.drafts[2].draft.type, 'owner_withdrawal');
 });
-

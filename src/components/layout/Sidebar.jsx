@@ -1,5 +1,5 @@
 import { NavLink, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, LogOut, Plus, Store } from 'lucide-react';
+import { ArrowLeft, FileText, LogOut, Plus, Settings2, SlidersHorizontal } from 'lucide-react';
 import Logo from '../common/Logo';
 import Button from '../common/Button';
 import { NAV_ITEMS } from './navItems';
@@ -12,11 +12,11 @@ export default function Sidebar({ onAddEntry }) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-[#121a1b] px-4 py-5 lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-[15.5rem] shrink-0 flex-col border-r border-line bg-white px-4 py-5 lg:flex">
       <Logo to="/app/dashboard" className="px-1" />
-      <div className="mt-6 rounded-xl border border-line bg-[#151e1f] p-3">
-        <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-ink-muted">Your workspace</p>
-        <p className="mt-1 truncate text-sm font-bold text-ink">One business. Clearer books.</p>
+      <div className="mt-7 rounded-xl border border-brand-100 bg-brand-50 p-3.5">
+        <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-brand-700">YOUR WORKSPACE</p>
+        <p className="mt-1.5 truncate text-sm font-extrabold text-ink">One business. Clearer books.</p>
       </div>
       {!isSyntheticDemo && <Button className="mt-4 w-full" icon={Plus} onClick={onAddEntry}>Add entry</Button>}
 
@@ -38,7 +38,8 @@ export default function Sidebar({ onAddEntry }) {
             )}
           </NavLink>
         ))}
-        <NavLink to="/app/profile" className={({isActive})=>`flex h-10 items-center gap-3 rounded-md px-3 text-sm font-semibold ${isActive?'bg-brand-50 text-brand-700':'text-ink-muted hover:bg-surface hover:text-ink'}`}><Store className="h-[18px] w-[18px]" />Business profile</NavLink>
+        <NavLink to="/app/profile" className={({isActive})=>`flex h-10 items-center gap-3 rounded-md px-3 text-sm font-semibold ${isActive?'bg-brand-50 text-brand-700':'text-ink-muted hover:bg-surface hover:text-ink'}`}><Settings2 className="h-[18px] w-[18px]" />Account & business</NavLink>
+        <NavLink to="/app/settings" className={({isActive})=>`flex h-10 items-center gap-3 rounded-md px-3 text-sm font-semibold ${isActive?'bg-brand-50 text-brand-700':'text-ink-muted hover:bg-surface hover:text-ink'}`}><SlidersHorizontal className="h-[18px] w-[18px]" />Appearance settings</NavLink>
         <NavLink to="/app/reports" className={({isActive})=>`flex h-10 items-center gap-3 rounded-md px-3 text-sm font-semibold ${isActive?'bg-brand-50 text-brand-700':'text-ink-muted hover:bg-surface hover:text-ink'}`}><FileText className="h-[18px] w-[18px]" />Reports</NavLink>
       </nav>
 

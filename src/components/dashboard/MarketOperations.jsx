@@ -46,11 +46,11 @@ export default function MarketOperations({ businessId, userId, transactions = []
 
   return <section className="mt-5 grid gap-4 lg:grid-cols-2" aria-label="Market trader tools">
     <Card>
-      <CardHeader title="Evening cash check" description="About 30 seconds � cash records only" action={<Coins className="h-5 w-5 text-brand-700" />} />
+      <CardHeader title="Evening cash check" description="About 30 seconds · cash records only" action={<Coins className="h-5 w-5 text-brand-700" />} />
       <form onSubmit={saveCash} className="space-y-3 p-4 pt-3 sm:p-5 sm:pt-3">
-        <p className="text-xs leading-5 text-ink-muted">Expected closing cash = opening float + confirmed cash sales - confirmed cash expenses and withdrawals. Mobile-money and untagged entries are excluded.</p>
+        <p className="text-xs leading-5 text-ink-muted">Expected closing cash = opening float + confirmed cash sales − confirmed cash expenses and withdrawals. Mobile-money and untagged entries are excluded.</p>
         <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-ink-muted">Cash at opening (ZMW)<Input className="mt-1" type="number" min="0" step="0.01" value={openingFloat || savedClose?.opening || ''} onChange={(event)=>setOpeningFloat(event.target.value)} disabled={readOnly} /></label><label className="text-xs font-semibold text-ink-muted">Cash counted now (ZMW)<Input className="mt-1" type="number" min="0" step="0.01" value={actualCash || savedClose?.actual || ''} onChange={(event)=>setActualCash(event.target.value)} disabled={readOnly} /></label></div>
-        {expected === null ? <p className="rounded-md bg-accent-50 p-3 text-xs leading-5 text-accent-800">No confirmed cash-tagged records for today. Tag payment channels in the ledger before using a difference as a reconciliation signal.</p> : <p className="rounded-md bg-brand-50 p-3 text-xs font-semibold leading-5 text-brand-800">Expected: {formatKwacha(expected)} � counted: {actualCash || savedClose?.actual ? formatKwacha(Number(actualCash || savedClose?.actual)) : 'not entered'}{actualCash || savedClose?.actual ? ` � difference ${formatKwacha(Number(actualCash || savedClose?.actual) - expected)}` : ''}</p>}
+        {expected === null ? <p className="rounded-md bg-accent-50 p-3 text-xs leading-5 text-accent-800">No confirmed cash-tagged records for today. Tag payment channels in the ledger before using a difference as a reconciliation signal.</p> : <p className="rounded-md bg-brand-50 p-3 text-xs font-semibold leading-5 text-brand-800">Expected: {formatKwacha(expected)} · counted: {actualCash || savedClose?.actual ? formatKwacha(Number(actualCash || savedClose?.actual)) : 'not entered'}{actualCash || savedClose?.actual ? ` · difference ${formatKwacha(Number(actualCash || savedClose?.actual) - expected)}` : ''}</p>}
         {untagged > 0 && <p className="text-[11px] text-ink-muted">{untagged} confirmed entry{untagged === 1 ? ' is' : 'ies are'} missing a payment channel and are excluded.</p>}
         {!readOnly && <Button type="submit" variant="secondary" disabled={actualCash === '' && !savedClose}>Save cash count</Button>}
         {savedClose && <p className="text-[10px] text-ink-muted">Saved locally at {new Date(savedClose.savedAt).toLocaleTimeString()}.</p>}
@@ -63,4 +63,3 @@ export default function MarketOperations({ businessId, userId, transactions = []
     </Card>
   </section>;
 }
-

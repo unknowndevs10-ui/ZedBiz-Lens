@@ -22,4 +22,3 @@ export const operationsStore = {
     localStorage.setItem(keyFor('cash-close', userId, businessId), JSON.stringify(close));
   },
 };
-

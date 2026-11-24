@@ -217,6 +217,8 @@ export const mockApi = {
       confidence: Number.isFinite(Number(draft.confidence)) ? Math.min(1, Math.max(0, Number(draft.confidence))) : null,
       status: 'pending',
       source,
+      receiptAttachmentId: String(draft.receiptAttachmentId || '').slice(0, 100) || null,
+      receiptImageName: String(draft.receiptImageName || '').slice(0, 160) || null,
       synthetic: false,
       ...(draft.type === 'income' ? { taxable: 'unsure', taxReason: 'Review tax treatment before using this record.' } : {}),
       createdAt: new Date().toISOString(),
@@ -274,4 +276,3 @@ export const mockApi = {
     persist(cache);
   },
 };
-

@@ -10,8 +10,7 @@ export default function Footer({ compact = false }) {
         <nav aria-label="Footer" className="md:col-span-3"><h2 className="text-sm font-bold">Access</h2><ul className="mt-3 space-y-2 text-sm"><li><Link to="/login" className="rounded text-ink-muted hover:text-brand-700 focus-ring">Team sign in</Link></li></ul></nav>
         <div className="md:col-span-4"><h2 className="text-sm font-bold">Our boundaries</h2><p className="mt-3 text-sm text-ink-muted">A prototype for the Zamtel x ZRA innovation challenge. The business brain surfaces explainable patterns for review; people confirm every record and all tax decisions remain with the business and its qualified advisers.</p></div>
       </div>
-      <div className="border-t border-line py-4 text-center text-xs text-ink-muted">c 2026 UnknownDevs � ZedBiz Lens</div>
+      <div className="border-t border-line py-4 text-center text-xs text-ink-muted">© 2026 UnknownDevs · ZedBiz Lens</div>
     </footer>
   );
 }
-

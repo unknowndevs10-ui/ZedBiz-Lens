@@ -1,4 +1,5 @@
-import { AlertTriangle, CheckCircle2, Info, XCircle, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, XCircle, X }
+ from 'lucide-react';
 
 const TONES = {
   info: { box: 'border-brand-200 bg-brand-50', icon: Info, iconClass: 'text-brand-700' },
@@ -21,6 +22,7 @@ export default function Notification({ tone = 'info', title, children, onDismiss
           <X className="h-4 w-4" />
         </button>
       )}
+      
     </div>
   );
 }

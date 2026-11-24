@@ -9,8 +9,8 @@
 
 ## Phrase sources
 
-- Bemba respectful greeting: "Muli shani mukwai?"; greeting, thanks and farewell phrases are listed in [Zambian Dialects: Words for Sharing](https://zambiahighcommission.ca/wp/wp-content/uploads/launchmagazine2010.pdf).
-- Nyanja respectful greeting: "Muli bwanji?"; the same reference lists Nyanja greetings and thanks.
+- Bemba respectful greeting: “Muli shani mukwai?”; greeting, thanks and farewell phrases are listed in [Zambian Dialects: Words for Sharing](https://zambiahighcommission.ca/wp/wp-content/uploads/launchmagazine2010.pdf).
+- Nyanja respectful greeting: “Muli bwanji?”; the same reference lists Nyanja greetings and thanks.
 - Regional usage varies. Validate new phrases with Zambian native speakers before presenting them as financial, tax, or legal guidance.
 
 ## Expansion plan
@@ -19,4 +19,3 @@
 2. Add consent-based correction feedback for transaction phrases; never learn tax treatment from unreviewed notes.
 3. Evaluate speech recognition and text-to-speech separately for Bemba and Nyanja using community-reviewed examples and speakers.
 4. Keep the original user note, display the parsed draft, and require owner confirmation in every language.
-

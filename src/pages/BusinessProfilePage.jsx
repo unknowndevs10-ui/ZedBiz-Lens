@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, Check, CircleHelp, CreditCard, MapPin, ShieldCheck, Sparkles, Store, WalletCards } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, Check, CircleHelp, CreditCard, Database, Landmark, MapPin, Network, ShieldCheck, Sparkles, Store, WalletCards } from 'lucide-react';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Notification from '../components/common/Notification';
@@ -8,6 +8,7 @@ import { Field, Input, Select } from '../components/common/FormControls';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import AccountBusinessSettings from './AccountBusinessSettings';
 
 const STEPS = ['You', 'Business name', 'Business type', 'Registration', 'Location', 'Payments', 'Language', 'Goals', 'Challenge', 'Tax readiness', 'Review'];
 const STEP_HEADINGS = [
@@ -20,10 +21,10 @@ const STEP_HEADINGS = [
   'Which language works best for you?',
   'What matters most to improve?',
   'What is hardest to manage?',
-  'Where are you on registration?',
+  'Set your tax and registration profile',
   'Review your business profile',
 ];
-const OPTIONAL_STEPS = new Set([2, 3, 4, 6, 8, 9]);
+const OPTIONAL_STEPS = new Set([6, 8]);
 const SETUP_PHASES = [
   { label: 'You', steps: [0] },
   { label: 'Business', steps: [1, 2, 3] },
@@ -51,7 +52,7 @@ const FORMALITY = [
 ];
 const DEFAULT_FORM = {
   displayName: '', role: 'Owner', businessName: '', businessType: 'Market trader',
-  businessFormality: 'informal', province: 'Lusaka', district: '', language: 'English',
+  businessFormality: 'informal', province: 'Lusaka', district: '', language: 'English', legalForm: '', taxActivity: '',
   recordChannels: ['cash'], pacraStatus: 'unsure', zraStatus: 'unsure',
   vatStatus: 'unsure', formalizationInterest: 'yes', goals: ['records', 'profit'],
   biggestChallenge: 'keeping_records', operatingDaysPerWeek: '6',
@@ -73,21 +74,52 @@ function ChoiceCards({ items, value, onChange, columns = 3 }) {
   );
 }
 
+function WorkspaceSetup({ businessName, welcomed, onContinue }) {
+  const setupLayers = [
+    { label: 'Business profile saved', icon: BadgeCheck, text: 'Your answers are attached to your account.' },
+    { label: 'Records workspace prepared', icon: Database, text: 'Your ledger starts empty; no activity has been invented.' },
+    { label: 'AI context prepared', icon: Sparkles, text: 'Guidance uses your business answers; this does not train a model.' },
+    { label: 'Readiness profile organized', icon: Landmark, text: 'Your self-reported status is saved; no government verification is implied.' },
+  ];
+  return <main className="mx-auto grid min-h-[75vh] place-items-center px-4 py-10" aria-live="polite">
+    <section className="w-full max-w-3xl overflow-hidden rounded-3xl border border-line bg-white shadow-pop">
+      <div className="bg-brand-50 px-5 py-8 text-center sm:px-10 sm:py-10">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white text-brand-700 shadow-card"><Network className="setup-mark h-6 w-6" /></span>
+        <p className="eyebrow mt-5">YOUR BUSINESS LAYERS</p>
+        <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{welcomed ? `Welcome, ${businessName || 'business owner'}` : 'Setting up your workspace'}</h1>
+        <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-ink-muted">{welcomed ? 'Your business layers are ready. Start with a sale, expense or customer tab when you are ready.' : `Applying ${businessName || 'your business'} details to the records, insight and tax-readiness views. Nothing enters your ledger until you record and confirm it.`}</p>
+        <div className="mx-auto mt-6 h-1.5 max-w-sm overflow-hidden rounded-full bg-white"><span className="setup-progress block h-full w-full origin-left rounded-full bg-brand" /></div>
+      </div>
+      <div className="grid gap-px bg-line sm:grid-cols-2">{setupLayers.map(({ label, icon: Icon, text }, index) => <div key={label} className="flex items-start gap-3 bg-white p-4 sm:p-5"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon className="h-4 w-4" /></span><div><p className="text-xs font-extrabold">{label}</p><p className="mt-1 text-[11px] leading-5 text-ink-muted">{text}</p></div><span className="ml-auto text-[10px] font-extrabold text-brand-700">0{index + 1}</span></div>)}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface px-5 py-4 sm:px-7"><p className="text-[10px] leading-5 text-ink-muted">Zamtel and ZRA services are not connected in this prototype.</p><Button onClick={onContinue} icon={ArrowRight}>Open workspace</Button></div>
+    </section>
+  </main>;
+}
+
 export default function BusinessProfilePage() {
   const { businessProfile, saveBusinessProfile } = useData();
   const { toast } = useToast();
-  const { saveBusinessProfile: saveSecureBusinessProfile, businessProfile: securedProfile, profileComplete, signOut } = useAuth();
+  const { saveBusinessProfile: saveSecureBusinessProfile, businessProfile: securedProfile, profileComplete, signOut, user } = useAuth();
   const navigate = useNavigate();
   const oldStepMap = [0, 1, 4, 7, 9, 10];
   const savedStep = securedProfile?.onboardingStep;
   const initialStep = Number.isInteger(savedStep)
     ? Math.min(Math.max(securedProfile?.onboardingVersion === 2 ? savedStep : oldStepMap[savedStep] ?? 0, 0), STEPS.length - 1)
     : 0;
-  const [step, setStep] = useState(initialStep);
+  const profileStep = profileComplete && (!securedProfile?.legalForm || !securedProfile?.taxActivity) ? 9 : initialStep;
+  const [step, setStep] = useState(profileStep);
   const currentPhase = SETUP_PHASES.findIndex((phase) => phase.steps.includes(step));
   const [showIntro, setShowIntro] = useState(() => !profileComplete && !securedProfile);
+  const [workspaceSetup, setWorkspaceSetup] = useState(false);
+  const [workspaceWelcomed, setWorkspaceWelcomed] = useState(false);
   const [form, setForm] = useState(() => ({ ...DEFAULT_FORM, ...(securedProfile || businessProfile || {}) }));
   const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!workspaceSetup) return undefined;
+    const welcomeTimer = window.setTimeout(() => setWorkspaceWelcomed(true), 900);
+    const openTimer = window.setTimeout(() => navigate('/app/dashboard', { replace: true }), 1900);
+    return () => { window.clearTimeout(welcomeTimer); window.clearTimeout(openTimer); };
+  }, [workspaceSetup, navigate]);
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const toggleChannel = (id) => update('recordChannels', form.recordChannels.includes(id)
     ? form.recordChannels.filter((channel) => channel !== id)
@@ -101,6 +133,7 @@ export default function BusinessProfilePage() {
     if (step === 1 && !form.businessName.trim()) return toast('Add your business or trading name to continue.', { tone: 'warning' });
     if (step === 5 && !form.recordChannels.length) return toast('Choose at least one way customers pay before continuing.', { tone: 'warning' });
     if (step === 7 && !form.goals.length) return toast('Choose one goal so ZedBiz can shape your guidance.', { tone: 'warning' });
+    if (step === 9 && (!form.legalForm || !form.taxActivity)) return toast('Choose a legal form and main business activity for the tax profile.', { tone: 'warning' });
     const nextStep = Math.min(step + 1, STEPS.length - 1);
     setSaving(true);
     try {
@@ -142,17 +175,27 @@ export default function BusinessProfilePage() {
   }
 
   async function finish() {
+    if (!form.displayName.trim() || !form.businessName.trim() || !form.recordChannels.length || !form.legalForm || !form.taxActivity) {
+      return toast('Complete the required business and tax details before opening your workspace.', { tone: 'warning' });
+    }
     setSaving(true);
     try {
       const cleanProfile = saveBusinessProfile(form);
       await saveSecureBusinessProfile(cleanProfile, { completed: true });
-      toast('Your profile is saved securely. Your clean ledger is ready.', { title: 'You are all set' });
-      window.setTimeout(() => navigate('/app/dashboard'), 250);
+      if (profileComplete) {
+        toast('Your business profile has been updated.', { tone: 'success' });
+        navigate('/app/dashboard', { replace: true });
+      } else {
+        setWorkspaceSetup(true);
+      }
     } catch (error) {
       toast(error.message || 'We could not save your profile. Check your connection and try again.', { tone: 'danger', title: 'Setup not saved' });
       setSaving(false);
     }
   }
+
+  if (workspaceSetup) return <WorkspaceSetup businessName={form.businessName} welcomed={workspaceWelcomed} onContinue={() => navigate('/app/dashboard', { replace: true })} />;
+  if (profileComplete) return <AccountBusinessSettings />;
 
   if (showIntro) return (
     <div className="mx-auto max-w-3xl py-5 sm:py-10">
@@ -160,7 +203,7 @@ export default function BusinessProfilePage() {
         <div className="mx-auto max-w-2xl text-center">
           <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-brand-200 bg-brand-50 text-brand-700"><Sparkles className="h-6 w-6" /></div>
           <p className="eyebrow mt-5">WELCOME TO YOUR ZEDBIZ WORKSPACE</p>
-          <h1 id="business-intro-title" className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Let's make your business easier to understand.</h1>
+          <h1 id="business-intro-title" className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Let’s make your business easier to understand.</h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ink-muted">A few short questions will shape a workspace around the way you trade, the records you keep and what you want to improve.</p>
         </div>
 
@@ -171,8 +214,8 @@ export default function BusinessProfilePage() {
         </div>
 
         <div className="mt-7 flex flex-col items-center gap-3">
-          <Button size="lg" icon={ArrowRight} onClick={() => setShowIntro(false)}>Let's go</Button>
-          <p className="text-[11px] text-ink-muted">11 focused steps � progress saves as you continue � you can sign out and resume</p>
+          <Button size="lg" icon={ArrowRight} onClick={() => setShowIntro(false)}>Let’s go</Button>
+          <p className="text-[11px] text-ink-muted">A guided setup in 11 short steps · progress saves as you continue · you can sign out and resume</p>
         </div>
       </section>
     </div>
@@ -197,13 +240,18 @@ export default function BusinessProfilePage() {
         </ol>
         <div className="mt-auto rounded-xl border border-line bg-[#0d1415] p-3 text-[11px] leading-5 text-ink-muted"><ShieldCheck className="mb-2 h-4 w-4 text-brand-700" />Your entries stay under your control. Never add passwords, TPINs, or payment account numbers.</div>
       </aside>
-      <main className="min-w-0 rounded-2xl p-1 sm:p-3 lg:border lg:border-line lg:bg-[#0e1516] lg:p-5" style={{ backgroundImage: 'radial-gradient(rgba(164,190,186,0.10) 1px, transparent 1px)', backgroundSize: '18px 18px' }}>
+      <main className="min-w-0 rounded-2xl p-1 sm:p-3 lg:border lg:border-line lg:bg-white lg:p-5">
       <div className="mx-auto max-w-2xl">
       <header className="mb-5 text-center sm:mb-7">
         <p className="eyebrow">{profileComplete ? 'YOUR BUSINESS PROFILE' : 'GETTING TO KNOW YOUR BUSINESS'}</p>
         <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{profileComplete ? 'Your business profile' : STEP_HEADINGS[step]}</h1>
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-ink-muted">{profileComplete ? 'Review your business details and update them as your work changes.' : 'One simple step at a time. Your progress saves as you continue, so you can sign out and resume later.'}</p>
       </header>
+
+      {profileComplete && <section aria-label="Account settings" className="mb-5 flex flex-col gap-3 rounded-xl border border-line bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0"><p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-brand-700">ACCOUNT SETTINGS</p><p className="mt-1 truncate text-sm font-bold">{user?.email || 'Signed-in account'}</p><p className="mt-1 text-xs text-ink-muted">Your secure sign-in is managed by Supabase. Business details below are saved to this account.</p></div>
+        <a href="/login?reset=1" className="shrink-0 rounded-lg border border-line bg-surface px-3 py-2 text-xs font-bold text-brand-700 transition-colors hover:border-brand hover:bg-brand-50 focus-ring">Reset password</a>
+      </section>}
 
       <div className="mb-4">
         <div className="mb-3 flex min-h-9 items-center justify-between gap-2">
@@ -260,14 +308,19 @@ export default function BusinessProfilePage() {
           </section>}
 
           {step === 9 && <section aria-labelledby="step-registration">
-            <p className="mb-4 text-sm leading-6 text-ink-muted">This is self-reported readiness, not a ZRA eligibility decision. Do not enter registration numbers.</p>
-            {form.businessFormality === 'informal' ? <div><p className="mb-4 text-sm leading-6 text-ink-muted">Many businesses begin informally. Would guidance on formalising be useful later?</p><ChoiceCards value={form.formalizationInterest} onChange={(value) => update('formalizationInterest', value)} items={[{ id: 'yes', title: 'Yes, guide me' }, { id: 'unsure', title: 'I am exploring' }, { id: 'no', title: 'Not right now' }]} /></div> : <div className="space-y-5"><p className="text-sm leading-6 text-ink-muted">Share only whether these apply. Do not enter registration or tax numbers.</p>{[['pacraStatus', 'Registered with PACRA?'], ['zraStatus', 'Have a ZRA TPIN?'], ['vatStatus', 'Registered for VAT?']].map(([key, label]) => <fieldset key={key}><legend className="mb-2 text-sm font-bold">{label}</legend><div className="flex flex-wrap gap-2">{[{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'Not yet' }, { id: 'unsure', label: 'Not sure' }].map((choice) => <button key={choice.id} type="button" aria-pressed={form[key] === choice.id} onClick={() => update(key, choice.id)} className={'rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus-ring ' + (form[key] === choice.id ? 'border-brand bg-brand-50 text-brand-700' : 'border-line bg-[#121a1b] text-ink-muted hover:border-brand-200')}>{choice.label}</button>)}</div></fieldset>)}</div>}
+            <p className="mb-5 text-sm leading-6 text-ink-muted">These answers help select the correct reference schedule. They are self-reported and are not checked with ZRA or PACRA. Never enter a TPIN or registration number.</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Legal form" hint="Choose the structure that best describes this business.">{(props) => <Select {...props} autoFocus required value={form.legalForm} onChange={(event) => update('legalForm', event.target.value)}><option value="">Choose a legal form</option><option value="sole_trader">Sole trader</option><option value="registered_business_name">Registered business name</option><option value="limited_company">Limited company</option><option value="partnership">Partnership</option><option value="other">Not sure / other</option></Select>}</Field>
+              <Field label="Main tax activity" hint="This selects a reference rule only; Finance must confirm treatment.">{(props) => <Select {...props} required value={form.taxActivity} onChange={(event) => update('taxActivity', event.target.value)}><option value="">Choose a main activity</option><option value="retail_trading">Retail or trading</option><option value="agriculture">Agriculture</option><option value="services">Services</option><option value="consultancy">Consultancy</option><option value="other">Other / needs review</option></Select>}</Field>
+            </div>
+            {form.businessFormality === 'informal' && <div className="mt-5"><p className="mb-3 text-sm font-bold">Would guidance on formalising be useful later?</p><ChoiceCards value={form.formalizationInterest} onChange={(value) => update('formalizationInterest', value)} items={[{ id: 'yes', title: 'Yes, guide me' }, { id: 'unsure', title: 'I am exploring' }, { id: 'no', title: 'Not right now' }]} /></div>}
+            <div className="mt-5 space-y-4"><p className="text-sm font-bold">Your current registration readiness</p>{[['pacraStatus', 'Registered with PACRA?'], ['zraStatus', 'Have a ZRA TPIN?'], ['vatStatus', 'Registered for VAT?']].map(([key, label]) => <fieldset key={key}><legend className="mb-2 text-xs font-semibold text-ink-muted">{label}</legend><div className="flex flex-wrap gap-2">{[{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'Not yet' }, { id: 'unsure', label: 'Not sure' }].map((choice) => <button key={choice.id} type="button" aria-pressed={form[key] === choice.id} onClick={() => update(key, choice.id)} className={'rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus-ring ' + (form[key] === choice.id ? 'border-brand bg-brand-50 text-brand-700' : 'border-line bg-white text-ink-muted hover:border-brand-200')}>{choice.label}</button>)}</div></fieldset>)}</div>
             <Notification tone="info" title="Your answers are not checked against government records" className="mt-6">They help organize the experience only. Confirm status and obligations with Finance or ZRA before acting on them.</Notification>
           </section>}
 
           {step === 10 && <section aria-labelledby="step-review">
             <div className="mb-5 flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Check className="h-5 w-5" /></div><div><h2 id="step-review" className="text-lg font-extrabold">A workspace made for {form.businessName}</h2><p className="mt-1 text-sm text-ink-muted">Check your details. You can update this profile at any time.</p></div></div>
-            <dl className="divide-y divide-line rounded-xl border border-line bg-[#101718] px-4">{[['Your name and role', form.displayName + ' � ' + form.role], ['Business', form.businessName + ' � ' + form.businessType], ['Registration journey', form.businessFormality === 'informal' ? 'Informal / not registered' : form.businessFormality === 'registered' ? 'Formally registered' : 'Working towards registration'], ['Location', [form.district, form.province].filter(Boolean).join(', ')], ['Customer payments', form.recordChannels.map((channel) => CHANNELS.find((item) => item.id === channel)?.label).filter(Boolean).join(', ')], ['Your first goals', form.goals.map((goal) => GOALS.find((item) => item.id === goal)?.title).filter(Boolean).join(', ')], ['Language preference', form.language]].map(([label, value]) => <div key={label} className="grid gap-1 py-3 sm:grid-cols-[12rem_1fr]"><dt className="text-xs font-semibold text-ink-muted">{label}</dt><dd className="text-sm font-bold">{value}</dd></div>)}</dl>
+            <dl className="divide-y divide-line rounded-xl border border-line bg-white px-4">{[['Your name and role', form.displayName + ' · ' + form.role], ['Business', form.businessName + ' · ' + form.businessType], ['Registration journey', form.businessFormality === 'informal' ? 'Informal / not registered' : form.businessFormality === 'registered' ? 'Formally registered' : 'Working towards registration'], ['Legal form', form.legalForm.replaceAll('_', ' ')], ['Tax activity', form.taxActivity.replaceAll('_', ' ')], ['Location', [form.district, form.province].filter(Boolean).join(', ')], ['Customer payments', form.recordChannels.map((channel) => CHANNELS.find((item) => item.id === channel)?.label).filter(Boolean).join(', ')], ['Your first goals', form.goals.map((goal) => GOALS.find((item) => item.id === goal)?.title).filter(Boolean).join(', ')], ['Language preference', form.language]].map(([label, value]) => <div key={label} className="grid gap-1 py-3 sm:grid-cols-[12rem_1fr]"><dt className="text-xs font-semibold text-ink-muted">{label}</dt><dd className="text-sm font-bold">{value}</dd></div>)}</dl>
             <p className="mt-4 text-xs leading-5 text-ink-muted">Your ledger begins empty. After setup, your own entries will power the dashboard, calculator and business guidance.</p>
           </section>}
         </div>
@@ -285,4 +338,3 @@ export default function BusinessProfilePage() {
     </div>
   );
 }
-

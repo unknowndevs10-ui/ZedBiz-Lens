@@ -4,6 +4,7 @@ import Badge from '../common/Badge';
 import Button from '../common/Button';
 import ConfidenceMeter from './ConfidenceMeter';
 import TaxLabel from './TaxLabel';
+import ReceiptAttachmentPreview from './ReceiptAttachmentPreview';
 import { formatDate, formatKwacha } from '../../utils/format';
 
 /** One extracted line awaiting a decision. */
@@ -37,6 +38,7 @@ export default function TransactionCard({ transaction, onConfirm, onEdit, onReje
         <span className="text-[13px] text-ink-muted">{formatDate(transaction.date)}</span>
         <ConfidenceMeter value={transaction.confidence} />
       </div>
+      {transaction.receiptAttachmentId && <ReceiptAttachmentPreview attachmentId={transaction.receiptAttachmentId} name={transaction.receiptImageName} />}
       <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
         <Button size="sm" icon={Check} loading={busy === 'confirm'} disabled={Boolean(busy)} onClick={() => run('confirm', onConfirm)}>Confirm</Button>
         <Button size="sm" variant="secondary" icon={Pencil} disabled={Boolean(busy)} onClick={() => onEdit(transaction)}>Edit</Button>

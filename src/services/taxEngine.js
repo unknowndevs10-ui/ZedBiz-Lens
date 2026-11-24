@@ -102,7 +102,7 @@ export function calculateTaxReadiness(transactions = [], profile = {}, today = t
     incomeTaxRateLabel = `${rate * 100}% corporate${activity.includes('agric') ? ' agriculture' : ''}${minimumAlternativeTax == null ? ' scenario; turnover-tax status needs confirmation' : '; includes MAT floor check'}`;
   } else if (['sole_trader', 'registered_business_name'].includes(legalForm)) {
     incomeTax = progressiveTax(taxableProfit, rules.income_tax.individual_annual_bands);
-    incomeTaxRateLabel = 'Progressive individual schedule (0%-37%)';
+    incomeTaxRateLabel = 'Progressive individual schedule (0%–37%)';
   } else if (legalForm === 'partnership') {
     incomeTaxRateLabel = 'Partner allocation needs Finance review';
   }
@@ -141,4 +141,3 @@ export function calculateTaxReadiness(transactions = [], profile = {}, today = t
     },
   };
 }
-

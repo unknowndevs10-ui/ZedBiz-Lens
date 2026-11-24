@@ -107,8 +107,8 @@ export function buildDecisionCards({ profile, transactions = [], inventory = [],
     const tagged = todayCash.length;
     const metric = cashCount?.date === todayISO() && tagged ? {
       label: 'Expected vs counted closing cash',
-      value: `${money(Number(cashCount.opening || 0) + cashIn - cashOut)} expected � ${money(Number(cashCount.actual || 0))} counted � ${money(Number(cashCount.actual || 0) - (Number(cashCount.opening || 0) + cashIn - cashOut))} variance`,
-    } : tagged ? { label: 'Recorded cash movement today', value: `${money(cashIn)} in � ${money(cashOut)} out` } : null;
+      value: `${money(Number(cashCount.opening || 0) + cashIn - cashOut)} expected · ${money(Number(cashCount.actual || 0))} counted · ${money(Number(cashCount.actual || 0) - (Number(cashCount.opening || 0) + cashIn - cashOut))} variance`,
+    } : tagged ? { label: 'Recorded cash movement today', value: `${money(cashIn)} in · ${money(cashOut)} out` } : null;
     cards.push(actionCard({
       id: 'cash-reconciliation', priority: 'medium', tone: 'blue',
       headline: cashCount?.date === todayISO() ? 'Cash close has been recorded' : 'Reconcile the cash in your till or bag',
@@ -129,7 +129,7 @@ export function buildDecisionCards({ profile, transactions = [], inventory = [],
       id: 'supplier-price-change', priority: 'high', tone: 'amber',
       headline: `A recorded unit price rose for ${priceChange.at(-1).itemName}`,
       reason: `Two confirmed purchase records for this item and supplier show different unit costs. Check the receipt and quantities before drawing a conclusion.`,
-      action: 'Compare purchase records', metric: { label: 'Recorded unit cost', value: `${money(Number(priceChange.at(-2).unitCost))}  ${money(Number(priceChange.at(-1).unitCost))}` },
+      action: 'Compare purchase records', metric: { label: 'Recorded unit cost', value: `${money(Number(priceChange.at(-2).unitCost))} → ${money(Number(priceChange.at(-1).unitCost))}` },
     }) : actionCard({
       id: 'supplier-price-data', priority: 'low',
       headline: 'Track item and unit cost on stock receipts',
@@ -141,7 +141,7 @@ export function buildDecisionCards({ profile, transactions = [], inventory = [],
       id: 'low-stock', priority: 'high', tone: 'amber',
       headline: `${lowItems.length} item${lowItems.length === 1 ? '' : 's'} at or below the restock level`,
       reason: `The count you entered for ${lowItems.slice(0, 3).map((item: any) => item.name).join(', ')} is at or below its restock level. Confirm the shelf count before ordering.`,
-      action: 'Review stock counts', href: '/app/dashboard', metric: { label: 'Items to check', value: lowItems.map((item: any) => `${item.name} (${item.quantity})`).join(' � ') },
+      action: 'Review stock counts', href: '/app/dashboard', metric: { label: 'Items to check', value: lowItems.map((item: any) => `${item.name} (${item.quantity})`).join(' · ') },
     }));
   }
 
@@ -180,4 +180,3 @@ export function buildDecisionCards({ profile, transactions = [], inventory = [],
     .sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
     .slice(0, 3);
 }
-

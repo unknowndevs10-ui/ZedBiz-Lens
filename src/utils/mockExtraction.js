@@ -7,8 +7,12 @@ const HAS_CURRENCY_MARK = /\bK\s?\d|\bZMW|\bZK|kwacha/i;
 const SPLITTER = /\.(?!\d)|;|\n|,(?!\d{3}\b)|\s+and\s+|\s+then\s+/i;
 const INCOME_WORDS = /\b(sold|sale|sales|earned|received|income|customer|customers|client|clients|braided|plaited|styled|revenue|made)\b/i;
 const SERVICE_WORDS = /\b(hair|braid|braided|weave|relaxer|plait|plaited|styled|wash|client|clients|treatment)\b/i;
+const CASH_WORDS = /\b(cash|notes|coins|physical cash)\b/i;
+const MOBILE_MONEY_WORDS = /\b(mobile money|momo|airtel money|mtn momo|zamtel kwacha)\b/i;
 
 const EXPENSE_CATEGORY_RULES = [
+  [/owner personal withdrawal|owner withdrawal|personal drawing|drawings/i, 'Owner personal withdrawal'],
+  [/spoilage|wastage|damaged stock|unsold stock|expired stock/i, 'Spoilage & wastage'],
   [/rent/i, 'Rent'],
   [/electric|zesco|water|airtime|data bundle|bill|tokens|wifi/i, 'Utilities'],
   [/wage|salary|assistant|helper|staff/i, 'Wages'],
@@ -81,6 +85,8 @@ export function extractTransactions(text) {
       description: tidy(segment),
       amount,
       date: /\byesterday\b/i.test(segment) ? addDays(today, -1) : today,
+      ...(CASH_WORDS.test(segment) ? { paymentMethod: 'cash' } : MOBILE_MONEY_WORDS.test(segment) ? { paymentMethod: 'mobile_money' } : {}),
+      ...( /owner personal withdrawal|owner withdrawal|personal drawing|drawings/i.test(segment) ? { type: 'owner_withdrawal' } : {}),
       confidence,
     });
   }

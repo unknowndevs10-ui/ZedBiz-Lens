@@ -93,4 +93,3 @@ export function buildShortGreeting(profile = {}) {
   const greeting = LOCAL_GREETINGS[profile.language]?.greeting;
   return [greeting, `Welcome to ZedBiz Lens${profile.displayName ? `, ${profile.displayName}` : ''}. Your business. Your numbers. Your clarity.`].filter(Boolean).join(' ');
 }
-

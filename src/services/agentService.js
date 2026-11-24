@@ -85,6 +85,8 @@ function categoryFor(text, type, profile = null) {
     return 'Sales';
   }
   const categories = [
+    [/owner personal withdrawal|owner withdrawal|personal drawing|drawings/i, 'Owner personal withdrawal'],
+    [/spoilage|wastage|damaged stock|unsold stock|expired stock/i, 'Spoilage & wastage'],
     [/rent/i, 'Rent'],
     [/electric|zesco|water|airtime|data bundle|bill|tokens|wifi/i, 'Utilities'],
     [/wage|salary|assistant|helper|staff/i, 'Wages'],
@@ -107,18 +109,20 @@ export function interpretLocally(text, businessProfile = null) {
   const parsed = amountFromText(source);
   if (parsed.error) return { kind: 'clarify', prediction, message: parsed.error };
   const type = prediction.intent === 'sale' ? 'income' : 'expense';
+  const withdrawal = /owner personal withdrawal|owner withdrawal|personal drawing|drawings/i.test(source);
   const taxable = type === 'income' ? { taxable: 'unsure', taxReason: 'The demo agent does not decide tax treatment. Please review this label.' } : {};
   const yesterday = /\byesterday\b/i.test(source);
   return {
     kind: 'draft',
     prediction,
     draft: {
-      type,
-      category: categoryFor(source, type, businessProfile),
+      type: withdrawal ? 'owner_withdrawal' : type,
+      category: withdrawal ? 'Owner personal withdrawal' : categoryFor(source, type, businessProfile),
       description: source.length > 80 ? `${source.slice(0, 77)}...` : source,
       amount: parsed.amount,
       date: yesterday ? addDays(todayISO(), -1) : todayISO(),
       confidence: prediction.confidence,
+      ...( /\b(cash|notes|coins)\b/i.test(source) ? { paymentMethod: 'cash' } : /mobile money|momo|airtel money|mtn momo|zamtel kwacha/i.test(source) ? { paymentMethod: 'mobile_money' } : {}),
       ...taxable,
     },
   };

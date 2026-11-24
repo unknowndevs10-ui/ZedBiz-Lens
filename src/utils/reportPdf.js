@@ -59,4 +59,3 @@ export function buildTaxReportPdf(business, tax) {
   ];
   return buildSimplePdf({ headerLabel: 'ILLUSTRATIVE ONLY', blocks });
 }
-

@@ -7,7 +7,16 @@ dist
 .vercel-cli-cache/
 .vite-cache/
 .DS_Store
+**/.npm-cache/
+**/node_modules/
+**/.vercel-cli-cache/
+**/.vite-cache/
+**/__pycache__/
+*.py[cod]
+tmp/
+qa-sandbox/.npm-cache/
 
 .vercel
 .env*
-
+qa-sandbox/data/*.zip
+qa-sandbox/data/*.xlsx

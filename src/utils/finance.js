@@ -118,4 +118,3 @@ export function buildDashboard(confirmed, periodId) {
     transactionCount: current.length,
   };
 }
-

@@ -46,4 +46,3 @@ create policy "team members update own business profile"
   );
 
 drop function if exists public.is_team_member();
-
