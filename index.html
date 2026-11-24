@@ -4,19 +4,19 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1F6F6B" />
+    <meta name="theme-color" content="#F4F6F4" />
     <meta name="description" content="ZedBiz Lens turns everyday business records into clear financial insights. Demo build with synthetic data." />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light" />
     <meta property="og:title" content="ZedBiz Lens — your business, in focus" />
     <meta property="og:description" content="A synthetic demo of AI-assisted business records, financial insight and tax readiness for Zambia." />
     <meta property="og:type" content="website" />
     <title>ZedBiz Lens - Your business. Your numbers. Your clarity.</title>
     <style>
-      html, body { margin: 0; min-height: 100%; background: #0b1011; }
-      .boot-loader { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #e7efee; font-family: system-ui, sans-serif; }
+      html, body { margin: 0; min-height: 100%; background: #F4F6F4; }
+      .boot-loader { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #1B2826; font-family: system-ui, sans-serif; }
       .boot-loader__mark { animation: boot-mark 680ms cubic-bezier(.2,.8,.2,1) both, boot-glow 2.2s ease-in-out 680ms infinite; }
       .boot-loader__name { margin-top: 12px; font-size: 17px; font-weight: 800; letter-spacing: -.04em; }
-      .boot-loader__name span { color: #72aaa4; font-weight: 600; }
+      .boot-loader__name span { color: #185C58; font-weight: 600; }
       .boot-loader__pulse { height: 44px; display: flex; align-items: center; gap: 5px; margin-top: 20px; }
       .boot-loader__pulse i { width: 3px; height: 12px; border-radius: 999px; background: #64aaa4; animation: boot-wave 850ms ease-in-out infinite alternate; }
       .boot-loader__pulse i:nth-child(3n) { background: #e0a84b; }
@@ -26,7 +26,7 @@
       .boot-loader__pulse i:nth-child(5) { animation-delay: 360ms; height: 24px; }
       .boot-loader__pulse i:nth-child(6) { animation-delay: 450ms; height: 14px; }
       .boot-loader__pulse i:nth-child(7) { animation-delay: 540ms; height: 21px; }
-      .boot-loader__label { margin-top: 10px; color: #a3b1b0; font-size: 13px; }
+      .boot-loader__label { margin-top: 10px; color: #687572; font-size: 13px; }
       @keyframes boot-mark { from { opacity: 0; transform: translateY(7px) scale(.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes boot-glow { 0%,100% { filter: drop-shadow(0 0 0 rgba(100,170,164,0)); } 50% { filter: drop-shadow(0 0 13px rgba(100,170,164,.18)); } }
       @keyframes boot-wave { from { transform: scaleY(.38); opacity: .5; } to { transform: scaleY(1); opacity: .95; } }
@@ -36,7 +36,7 @@
   <body>
     <div id="root">
       <div class="boot-loader" role="status" aria-label="Loading ZedBiz Lens">
-        <svg class="boot-loader__mark" width="42" height="42" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" rx="13" fill="#123A38" stroke="#2C7771" stroke-width="1.5"/><path d="M10 13.5h20M10 20h11M10 26.5h8" fill="none" stroke="#E9F3F1" stroke-width="2.3" stroke-linecap="round"/><path d="m22 25 4.2 4.2L33 20" fill="none" stroke="#E0A84B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="boot-loader__mark" width="42" height="42" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" rx="12" fill="#185C58" stroke="#2D807A" stroke-width="1.25"/><path d="M10.5 12.5h19l-19 15h19" fill="none" stroke="#F4F6F4" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="20" r="3.5" fill="#E0A84B" stroke="#185C58" stroke-width="1.5"/></svg>
         <span class="boot-loader__name">ZedBiz <span>Lens</span></span>
         <div class="boot-loader__pulse" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <span class="boot-loader__label">Waking up your business workspace</span>
