@@ -1,4 +1,5 @@
 import { addDays, todayISO } from '../utils/format';
+import { supabase } from '../lib/supabase';
 
 export type ReceiptExtraction = {
   supplier: string;
@@ -11,7 +12,8 @@ export type ReceiptExtraction = {
   smart_invoice_valid: boolean | null;
   supplier_tpin_verified: boolean | null;
   input_vat_amount: number | null;
-  source: 'donut-live' | 'manual-entry';
+  currency_code?: string | null;
+  source: 'donut-live' | 'veryfi-live' | 'manual-entry';
 };
 
 const engineUrl = String(import.meta.env.VITE_ENGINE_API_URL || '').replace(/\/$/, '');
@@ -46,7 +48,8 @@ function normalizeReceiptPayload(payload: any): ReceiptExtraction {
     smart_invoice_valid: typeof payload.smart_invoice_valid === 'boolean' ? payload.smart_invoice_valid : null,
     supplier_tpin_verified: typeof payload.supplier_tpin_verified === 'boolean' ? payload.supplier_tpin_verified : null,
     input_vat_amount: Number.isFinite(Number(payload.input_vat_amount)) ? Number(payload.input_vat_amount) : null,
-    source: 'donut-live',
+    currency_code: typeof payload.currency_code === 'string' ? payload.currency_code.toUpperCase() : null,
+    source: payload.source === 'veryfi-live' ? 'veryfi-live' : 'donut-live',
   };
 }
 
@@ -57,6 +60,20 @@ export async function extractReceipt(file: File): Promise<ReceiptExtraction> {
     const response = await fetch(`${engineUrl}/receipts/extract`, { method: 'POST', body });
     if (!response.ok) throw new Error(`Receipt service returned ${response.status}.`);
     return normalizeReceiptPayload(await response.json());
+  }
+
+  if (supabase) {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session?.access_token) throw new Error('Sign in to use receipt reading.');
+    const { fileData, mimeType } = await compressReceiptImage(file);
+    const response = await fetch('/api/receipts/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+      body: JSON.stringify({ file_name: file.name, mime_type: mimeType, file_data: fileData }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Receipt service returned ${response.status}.`);
+    return normalizeReceiptPayload(payload);
   }
 
   // Without a configured vision endpoint, leave the receipt values blank.
@@ -74,6 +91,36 @@ export async function extractReceipt(file: File): Promise<ReceiptExtraction> {
     input_vat_amount: null,
     source: 'manual-entry',
   };
+}
+
+async function compressReceiptImage(file: File): Promise<{ fileData: string; mimeType: string }> {
+  if (typeof createImageBitmap !== 'function') throw new Error('This browser cannot prepare the image securely. Try a recent browser or enter the receipt manually.');
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, 2200 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Could not prepare the receipt image. Enter the details manually.');
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    let quality = 0.84;
+    let blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+    for (let attempt = 0; blob && blob.size > 2.7 * 1024 * 1024 && attempt < 4; attempt += 1) {
+      quality -= 0.1;
+      blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+    }
+    if (!blob || blob.size > 2.7 * 1024 * 1024) throw new Error('This receipt photo is too large to send safely. Choose a smaller image or enter the details manually.');
+    const fileData = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not prepare receipt image.'));
+      reader.onerror = () => reject(new Error('Could not prepare receipt image.'));
+      reader.readAsDataURL(blob);
+    });
+    return { fileData, mimeType: 'image/jpeg' };
+  } finally {
+    bitmap.close();
+  }
 }
 
 export async function predictThirtyDayRevenue(history: Array<{ date: string; revenue: number }>, { profile = {} as any } = {}) {
@@ -109,6 +156,6 @@ export function receiptDraft(extraction: ReceiptExtraction) {
     type: 'expense', category: 'Stock purchases', description: extraction.supplier,
     amount: Number(extraction.total_zmw) || Number(extraction.cogs_amount) + Number(extraction.expense_amount),
     date: extraction.date || addDays(todayISO(), 0), confidence: extraction.confidence,
-    source: extraction.source === 'donut-live' ? 'Receipt vision service' : 'Owner-entered receipt details',
+    source: ['donut-live', 'veryfi-live'].includes(extraction.source) ? 'Receipt vision service' : 'Owner-entered receipt details',
   };
 }

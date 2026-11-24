@@ -50,7 +50,7 @@ export async function inspectReceipt(file, transactions = []) {
       alerts.push({ item: item.description, previousUnitCost: Number(previous.unitCost), newUnitCost: Number(item.unit_price), percentIncrease: Math.round(change * 10) / 10, explanation: `This unit price is ${Math.round(change * 10) / 10}% above the last confirmed purchase you recorded. Check the item, quantity and receipt before acting.` });
     }
   }
-  return { extraction, alerts, modelStatus: extraction.source === 'donut-live' ? 'external-receipt-model' : 'manual-receipt-entry' };
+  return { extraction, alerts, modelStatus: ['donut-live', 'veryfi-live'].includes(extraction.source) ? 'external-receipt-model' : 'manual-receipt-entry' };
 }
 
 /** The adapter labels external model output and keeps deterministic fallback visible. */

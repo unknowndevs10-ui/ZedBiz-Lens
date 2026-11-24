@@ -28,6 +28,8 @@ export default function CapturePage() {
   const [amount, setAmount] = useState('');
   const [purchaseType, setPurchaseType] = useState('stock');
   const [allowReceiptService, setAllowReceiptService] = useState(false);
+  const [receiptServiceAvailable, setReceiptServiceAvailable] = useState(false);
+  const [receiptServiceName, setReceiptServiceName] = useState('Veryfi');
   const [tab, setTab] = useState('note');
   const [sms, setSms] = useState('');
   const [smsDraft, setSmsDraft] = useState(null);
@@ -37,6 +39,20 @@ export default function CapturePage() {
     if (imageUrl) URL.revokeObjectURL(imageUrl);
   }, [imageUrl]);
 
+  useEffect(() => {
+    if (String(import.meta.env.VITE_ENGINE_API_URL || '').trim()) {
+      setReceiptServiceAvailable(true);
+      setReceiptServiceName('configured receipt service');
+      return undefined;
+    }
+    let active = true;
+    fetch('/api/receipts/extract')
+      .then((response) => response.ok ? response.json() : null)
+      .then((status) => { if (active) { setReceiptServiceAvailable(Boolean(status?.configured)); setReceiptServiceName(status?.provider || 'Veryfi'); } })
+      .catch(() => { if (active) setReceiptServiceAvailable(false); });
+    return () => { active = false; };
+  }, []);
+
   async function scanReceipt(nextFile) {
     if (!nextFile) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(nextFile.type)) return toast('Choose a JPG, PNG or WebP receipt image.', { tone: 'warning' });
@@ -44,16 +60,16 @@ export default function CapturePage() {
     setFile(nextFile); setExtraction(null); setReceiptAlerts([]); setBusy(true);
     setImageUrl((current) => { if (current) URL.revokeObjectURL(current); return URL.createObjectURL(nextFile); });
     try {
-      const serviceConfigured = Boolean(String(import.meta.env.VITE_ENGINE_API_URL || '').trim());
-      const resultBundle = serviceConfigured && !allowReceiptService
+      const resultBundle = !receiptServiceAvailable || !allowReceiptService
         ? { extraction: { supplier: '', date: new Date().toISOString().slice(0, 10), line_items: [], cogs_amount: 0, expense_amount: 0, total_zmw: 0, confidence: 0, smart_invoice_valid: null, supplier_tpin_verified: null, input_vat_amount: null, source: 'manual-entry' }, alerts: [] }
         : await inspectReceipt(nextFile, transactions);
       const { extraction: result, alerts } = resultBundle;
       setExtraction(result);
       setReceiptAlerts(alerts);
-      setSupplier(result.source === 'donut-live' ? result.supplier : '');
-      setAmount(result.source === 'donut-live' ? String(result.total_zmw) : '');
-      setPurchaseType(result.source === 'donut-live' && result.cogs_amount > 0 && result.expense_amount > 0 ? 'mixed' : result.source === 'donut-live' && result.cogs_amount <= 0 ? 'expense' : 'stock');
+      const liveExtraction = ['donut-live', 'veryfi-live'].includes(result.source);
+      setSupplier(liveExtraction ? result.supplier : '');
+      setAmount(liveExtraction && (!result.currency_code || result.currency_code === 'ZMW') ? String(result.total_zmw) : '');
+      setPurchaseType(result.source === 'veryfi-live' ? 'stock' : liveExtraction && result.cogs_amount > 0 && result.expense_amount > 0 ? 'mixed' : liveExtraction && result.cogs_amount <= 0 ? 'expense' : 'stock');
     } catch (error) {
       setExtraction({ supplier: '', date: new Date().toISOString().slice(0, 10), line_items: [], cogs_amount: 0, expense_amount: 0, total_zmw: 0, confidence: 0, smart_invoice_valid: null, supplier_tpin_verified: null, input_vat_amount: null, source: 'manual-entry' });
       setSupplier(''); setAmount(''); setPurchaseType('stock');
@@ -86,7 +102,8 @@ export default function CapturePage() {
       }
       const lineSummary = extraction.line_items.map((item) => `${item.description} x${item.quantity} ${formatKwacha(item.amount)}`).join('; ');
       const receiptReference = file?.name ? `Photo: ${file.name}.` : 'Photo captured in this session.';
-      const common = { date: extraction.date || new Date().toISOString().slice(0, 10), confidence: extraction.source === 'donut-live' ? extraction.confidence : null, counterparty: supplier.trim(), source: extraction.source === 'donut-live' ? 'Receipt vision service · owner reviewed' : `Receipt photo · owner entered details · ${receiptReference}`, receiptAttachmentId, receiptImageName: receiptAttachmentId ? file?.name : null, smartInvoiceValid: extraction.source === 'donut-live' ? extraction.smart_invoice_valid === true : null, supplierTpinVerified: extraction.source === 'donut-live' ? extraction.supplier_tpin_verified === true : null, inputVatAmount: extraction.source === 'donut-live' ? extraction.input_vat_amount : null, inputInvoiceDate: extraction.date || null };
+      const liveExtraction = ['donut-live', 'veryfi-live'].includes(extraction.source);
+      const common = { date: extraction.date || new Date().toISOString().slice(0, 10), confidence: liveExtraction ? extraction.confidence : null, counterparty: supplier.trim(), source: liveExtraction ? `${extraction.source === 'veryfi-live' ? 'Veryfi' : 'Receipt vision'} extraction · owner reviewed` : `Receipt photo · owner entered details · ${receiptReference}`, receiptAttachmentId, receiptImageName: receiptAttachmentId ? file?.name : null, smartInvoiceValid: liveExtraction ? extraction.smart_invoice_valid : null, supplierTpinVerified: liveExtraction ? extraction.supplier_tpin_verified : null, inputVatAmount: liveExtraction ? extraction.input_vat_amount : null, inputInvoiceDate: extraction.date || null };
       const lineDescription = lineSummary ? ` Items: ${lineSummary}.` : '';
       const lineItem = extraction.line_items.find((item) => Number(item.amount) > 0);
       if (stockCost > 0) {
@@ -175,22 +192,25 @@ export default function CapturePage() {
       </div>
       <div className="mt-4">
       {tab === 'receipt' && <Card className="max-w-2xl p-5 sm:p-6">
-        <div className="flex items-start justify-between"><div><p className="eyebrow">01 / RECEIPT</p><h2 className="mt-2 text-lg font-extrabold">Capture a supplier receipt</h2><p className="mt-1 text-xs leading-5 text-ink-muted">Take a photo or choose an image. If receipt vision is unavailable, enter the details from your photo. Nothing is guessed.</p></div><Camera className="h-5 w-5 text-brand-700" /></div>
-        {Boolean(String(import.meta.env.VITE_ENGINE_API_URL || '').trim()) && <label className="mt-4 flex items-start gap-2 rounded-lg border border-line bg-white p-3 text-xs leading-5 text-ink-muted"><input type="checkbox" checked={allowReceiptService} onChange={(event) => setAllowReceiptService(event.target.checked)} className="mt-1 accent-[#185C58]" /><span>Allow this receipt image to be sent to the configured extraction service for suggestions. You will review all fields. Leave unchecked to keep the image in this browser and enter details manually.</span></label>}
+        <div className="flex items-start justify-between"><div><p className="eyebrow">01 / RECEIPT</p><h2 className="mt-2 text-lg font-extrabold">Capture a supplier receipt</h2><p className="mt-1 text-xs leading-5 text-ink-muted">Take a photo or choose an image. Review every extracted field before saving a draft.</p></div><Camera className="h-5 w-5 text-brand-700" /></div>
+        {receiptServiceAvailable && <label className="mt-4 flex items-start gap-2 rounded-lg border border-line bg-white p-3 text-xs leading-5 text-ink-muted"><input type="checkbox" checked={allowReceiptService} onChange={(event) => setAllowReceiptService(event.target.checked)} className="mt-1 accent-[#185C58]" /><span>Allow this photo to be sent to {receiptServiceName} for receipt reading. {receiptServiceName === 'Veryfi' ? "ZedBiz asks Veryfi to delete the processed upload; Veryfi's processing and retention terms apply." : 'The connected service may process the image under its own handling terms.'} You review and confirm all suggestions. Leave unchecked for manual entry.</span></label>}
         <label className="mt-5 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface p-5 text-center transition-colors hover:border-brand-500"><Upload className="h-5 w-5 text-brand-700" /><span className="mt-2 text-sm font-bold">Use camera or choose a receipt</span><span className="mt-1 text-xs text-ink-muted">JPG, PNG or WebP · up to 8 MB</span><input ref={fileInputRef} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={busy || isSyntheticDemo} onChange={(event) => scanReceipt(event.target.files?.[0])} /></label>
         {busy && <div className="mt-4 rounded-lg border border-line bg-surface p-3" role="status"><p className="text-xs font-bold text-ink">Preparing your receipt for review</p><ol className="mt-2 grid gap-2 text-[11px] text-ink-muted sm:grid-cols-3"><li>01 · Open the receipt image</li><li>02 · Check captured details</li><li>03 · Keep every value editable</li></ol><p className="mt-2 text-[10px] text-ink-muted">A connected extraction service may suggest fields. You review them before saving a draft.</p></div>}
         {file && <div className="mt-3 flex items-center justify-between gap-3"><p className="truncate text-xs text-ink-muted">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</p><button type="button" onClick={clearReceipt} className="inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs font-bold text-ink-muted hover:bg-surface focus-ring"><X className="h-3.5 w-3.5" />Remove</button></div>}
         {imageUrl && <img src={imageUrl} alt="Selected receipt preview" className="mt-3 max-h-48 w-full rounded-lg border border-line object-contain" />}
         {extraction && <div className="mt-4 border-t border-line pt-4">
-          <p className="text-[10px] font-extrabold uppercase tracking-widest text-brand-700">{extraction.source === 'donut-live' ? 'Service extraction · review every field' : 'Manual receipt entry'}</p>
-          {extraction.source === 'manual-entry' && <p className="mt-2 rounded-md border border-accent-100 bg-accent-50 p-3 text-xs leading-5 text-ink-muted">No receipt-reading service is connected. Read your photo and enter the values below. These details will be saved as a pending draft for your review.</p>}
+          <p className="text-[10px] font-extrabold uppercase tracking-widest text-brand-700">{['donut-live', 'veryfi-live'].includes(extraction.source) ? 'Service extraction · review every field' : 'Manual receipt entry'}</p>
+          {extraction.source === 'manual-entry' && <p className="mt-2 rounded-md border border-accent-100 bg-accent-50 p-3 text-xs leading-5 text-ink-muted">{receiptServiceAvailable ? 'You chose manual receipt entry. Read your photo and enter the values below; they will be saved as a pending draft for review.' : 'Receipt reading is not configured. Read your photo and enter the values below; they will be saved as a pending draft for review.'}</p>}
           {extraction.source === 'donut-live' && <p className="mt-2 text-[11px] leading-5 text-ink-muted">Smart Invoice: {extraction.smart_invoice_valid === null ? 'not reported' : extraction.smart_invoice_valid ? 'reported valid by service' : 'reported invalid'} · Supplier TPIN: {extraction.supplier_tpin_verified === null ? 'not verified by service' : extraction.supplier_tpin_verified ? 'reported verified' : 'not verified'}. ZedBiz does not independently validate ZRA records.</p>}
+          {extraction.source === 'veryfi-live' && <p className="mt-2 text-[11px] leading-5 text-ink-muted">Veryfi read this image. Smart Invoice and supplier TPIN are not verified by this service; ZedBiz does not validate ZRA records. Currency detected: {extraction.currency_code || 'not confirmed'}.</p>}
+          {extraction.source === 'veryfi-live' && extraction.currency_code && extraction.currency_code !== 'ZMW' && <p role="alert" className="mt-2 rounded-md border border-accent-100 bg-accent-50 p-3 text-xs leading-5 text-ink-muted">The service detected {extraction.currency_code}. The amount was left blank so a non-ZMW value is not added to your Kwacha ledger. Check the receipt and enter an appropriate Kwacha amount manually.</p>}
+          {extraction.source === 'veryfi-live' && !extraction.currency_code && <p className="mt-2 rounded-md border border-accent-100 bg-accent-50 p-3 text-xs leading-5 text-ink-muted">The service could not confirm the currency. Check the printed receipt and enter the Kwacha amount yourself; the extracted total is not prefilled.</p>}
           {receiptAlerts.map((alert) => <p key={alert.item} className="mt-2 rounded-md border border-accent-100 bg-accent-50 p-3 text-xs leading-5 text-ink-muted">Price check for {alert.item}: recorded unit price is {alert.percentIncrease}% above the last confirmed purchase. Check receipt and quantity before acting.</p>)}
           <>
             <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-ink-muted">Supplier<input className="field mt-1 h-10" maxLength={100} value={supplier} onChange={(event) => setSupplier(event.target.value)} placeholder="Name shown on receipt" /></label><label className="text-xs font-semibold text-ink-muted">Receipt date<input className="field mt-1 h-10" type="date" value={extraction.date || ''} onChange={(event) => updateExtraction('date', event.target.value)} /></label><label className="text-xs font-semibold text-ink-muted">This receipt is for<select className="field mt-1 h-10" value={purchaseType} onChange={(event) => setPurchaseType(event.target.value)}><option value="stock">Stock or goods for resale</option><option value="expense">Operating expense</option><option value="mixed">Stock and other business costs</option></select></label><label className="text-xs font-semibold text-ink-muted">Total (ZMW)<input className="field mt-1 h-10 tabular-nums" type="number" min="0.01" step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" /></label>{purchaseType === 'mixed' && <><label className="text-xs font-semibold text-ink-muted">Stock cost / COGS (ZMW)<input className="field mt-1 h-10 tabular-nums" type="number" min="0" step="0.01" inputMode="decimal" value={extraction.cogs_amount || ''} onChange={(event) => updateExtraction('cogs_amount', Number(event.target.value))} placeholder="0.00" /></label><label className="text-xs font-semibold text-ink-muted">Other business cost (ZMW)<input className="field mt-1 h-10 tabular-nums" type="number" min="0" step="0.01" inputMode="decimal" value={extraction.expense_amount || ''} onChange={(event) => updateExtraction('expense_amount', Number(event.target.value))} placeholder="0.00" /></label></>}</div>
             <div className="mt-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold">Receipt line items <span className="font-normal text-ink-muted">(optional)</span></p><p className="mt-1 text-[10px] text-ink-muted">Item prices help compare future supplier receipts.</p></div><Button size="sm" variant="secondary" icon={Plus} onClick={addReceiptLine}>Add item</Button></div><div className="mt-2 space-y-2">{extraction.line_items.map((item, index) => <div key={`${index}-${item.description}`} className="grid gap-2 rounded-md border border-line p-3 sm:grid-cols-[1fr_5rem_7rem]"><label className="text-[11px] font-semibold text-ink-muted">Description<input className="field mt-1 h-9" maxLength={100} value={item.description} onChange={(event) => updateLineItem(index, 'description', event.target.value)} /></label><label className="text-[11px] font-semibold text-ink-muted">Qty<input className="field mt-1 h-9" type="number" min="0" step="any" value={item.quantity} onChange={(event) => updateLineItem(index, 'quantity', Number(event.target.value))} /></label><label className="text-[11px] font-semibold text-ink-muted">Unit price<input className="field mt-1 h-9" type="number" min="0" step="any" value={item.unit_price} onChange={(event) => updateLineItem(index, 'unit_price', Number(event.target.value))} /></label></div>)}</div></div>
-            {extraction.source === 'donut-live' && <p className="mt-3 text-[11px] text-ink-muted">Line item total {formatKwacha(extraction.line_items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0))} · service confidence {Math.round((Number(extraction.confidence) || 0) * 100)}% (review required)</p>}
-            <p className="mt-3 text-[10px] leading-5 text-ink-muted">The receipt photo is saved in this browser and attached to the pending draft. It is not synced to cloud storage in this prototype. If a vision endpoint is configured, the image is also sent to that service; otherwise, you enter the values yourself.</p>
+            {['donut-live', 'veryfi-live'].includes(extraction.source) && <p className="mt-3 text-[11px] text-ink-muted">Line item total {formatKwacha(extraction.line_items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0))} · service confidence {Math.round((Number(extraction.confidence) || 0) * 100)}% (review required)</p>}
+            <p className="mt-3 text-[10px] leading-5 text-ink-muted">The receipt photo is saved in this browser and attached to the pending draft. It is not synced to ZedBiz cloud storage. When enabled and allowed, the image is sent to the configured receipt reader; otherwise, you enter the values yourself.</p>
             <Button className="mt-4 w-full" icon={Check} loading={busy} disabled={isSyntheticDemo || !file || !supplier.trim() || Number(amount) <= 0} onClick={queueReceipt}>Add receipt draft for review</Button>
           </>
         </div>}
